@@ -184,6 +184,13 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
         # logo under assets/ is picked up for free.
         super().__init__(*args, directory=str(FRONTEND_DIR), **kwargs)
 
+    def end_headers(self):
+        # The frontend changes during development and demos; no-cache makes
+        # the browser revalidate on every load (304 when unchanged), so a
+        # plain refresh can never show a stale page.
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def do_POST(self):
         if self.path != "/api/chat":
             self.send_error(404, "No such endpoint")
