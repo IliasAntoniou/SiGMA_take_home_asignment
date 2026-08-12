@@ -1,0 +1,52 @@
+[
+  {
+    "question": "What AI-related talks are on Wednesday afternoon?",
+    "expected": ["S014", "S015", "S033", "S036"],
+    "note": "Track 'AI & Emerging Tech', day Wednesday, start >= 12:00."
+  },
+  {
+    "question": "Who is speaking about regulation?",
+    "expected": ["S004", "S005", "S011", "S016", "S021", "S026", "S039"],
+    "note": "Every session in the 'Regulation & Compliance' track."
+  },
+  {
+    "question": "I'm a payments startup - which exhibitors should I visit?",
+    "expected": ["E001", "E002", "E003", "E004"],
+    "note": "Every exhibitor whose category starts with 'Payments'."
+  },
+  {
+    "question": "Which exhibitor is at stand C05, and what do they do?",
+    "expected": ["E010"],
+    "note": "Stand C05 is QueryCache."
+  },
+  {
+    "question": "Where and when can I hear Ana Ribeiro speak?",
+    "expected": ["S002", "S012", "S025"],
+    "note": "Every session with 'Ana Ribeiro' in its speaker list."
+  },
+  {
+    "question": "What's happening on the Main Stage on Tuesday?",
+    "expected": ["S001", "S002", "S004", "S031", "S035"],
+    "note": "Day Tuesday, room 'Main Stage'."
+  },
+  {
+    "question": "Are there any sessions about underwater basket weaving?",
+    "expected": [],
+    "note": "Nothing in the programme. A good answer says so; offering the closest real session does not count against it."
+  },
+  {
+    "question": "Which sessions are in the Payments & Fintech track?",
+    "expected": ["S006", "S007", "S017", "S027"],
+    "note": "Every session in the 'Payments & Fintech' track."
+  },
+  {
+    "question": "Which exhibitors focus on esports?",
+    "expected": ["E018", "E019"],
+    "note": "Every exhibitor in the 'Esports' category."
+  },
+  {
+    "question": "What AI talks can I catch on Thursday afternoon?",
+    "expected": ["S024", "S025"],
+    "note": "Track 'AI & Emerging Tech', day Thursday, start >= 12:00."
+  }
+]

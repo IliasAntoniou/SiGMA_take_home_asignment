@@ -84,6 +84,8 @@ qwen2.5:7b-instruct         gemini-flash-latest
 | [`src/frontend/index.html`](src/frontend/index.html) | Whole UI: markup, styling, ~80 lines of JS. No framework. |
 | [`src/backend/orchestrator.py`](src/backend/orchestrator.py) | Serves the frontend, renders the dataset into the system prompt, handles `POST /api/chat`, validates the ids each answer cites, turns failures into readable JSON errors. |
 | [`src/backend/model_provider.py`](src/backend/model_provider.py) | The swappable model adapters: Ollama and Gemini. |
+| [`src/backend/eval.py`](src/backend/eval.py) | The mini eval: ten questions with expected id sets, scored for precision, recall and groundedness. |
+| [`src/backend/data/eval_questions.json`](src/backend/data/eval_questions.json) | The eval questions; each notes the deterministic filter its expected ids come from. |
 | `src/backend/api_key.txt` | Your Gemini key. Gitignored, so it is never committed. |
 | [`src/backend/data/sigma_agenda.json`](src/backend/data/sigma_agenda.json) | The provided dataset, unmodified. |
 
@@ -210,7 +212,25 @@ The brief allows at most two.
   at a glance, the abstract on hover. An id that is not in the dataset is
   dropped and logged instead of shown - so a hallucinated citation is caught
   automatically rather than reaching the user dressed up as a real one.
-- **Mini eval** - the planned second pick (next steps, item 1); not built yet.
+- **Mini eval** - ten questions with known-correct id sets, answered through
+  the app's real prompt and scored on the ids each answer claims on its
+  `Matches:` line:
+
+  ```bash
+  python src/backend/eval.py           # ollama (the default)
+  python src/backend/eval.py gemini
+  ```
+
+  Reported per provider: exact matches, precision (of the ids it claimed,
+  how many are right), recall (of the right ids, how many it claimed) and
+  groundedness (does every cited id exist in the dataset at all).
+  Groundedness is the hard invariant - the script exits non-zero if an
+  answer ever cites an id that is not in the dataset. The expected sets in
+  [`eval_questions.json`](src/backend/data/eval_questions.json) are
+  deterministic filters over the dataset (a track, a day, a speaker, a
+  stand), noted per question, so the ground truth can be re-derived and
+  checked by hand. Measured results are under
+  [Known limitations](#known-limitations).
 
 ---
 
@@ -249,9 +269,28 @@ cannot close it at 7B. At `temperature: 0` the result is reproducible.
 **Use the Gemini switch for accuracy; the local model is the zero-setup
 option.**
 
+Measured with the mini eval (ten questions with expected id sets, see
+[Stretch goals](#stretch-goals)):
+
+| | exact | mean precision | mean recall | hallucinated ids |
+|---|---|---|---|---|
+| qwen2.5:7b-instruct | 3/10 | 0.83 | 0.61 | 0 |
+| gemini-flash-latest | 3/3 answered* | 1.00 | 1.00 | 0 |
+
+*Gemini's free-tier daily quota ran out mid-eval; the three questions it did
+answer - including the two hardest aggregates, with 7 and 4 expected ids -
+were all exact. Rerun `python src/backend/eval.py gemini` on a fresh quota
+for the full row.
+
+The recall of 0.61 is the under-reporting made visible: on "Who is speaking
+about regulation?" the local model found one of the seven regulation-track
+sessions. Precision 0.83 with zero hallucinated ids means what it does return
+is real - the failure mode is missing sessions, not inventing them.
+
 Either way, **it does not invent sessions, speakers or exhibitors** - every id
-returned in testing was real. For an attendee this fails safe: they may miss a
-session, they will not turn up to one that doesn't exist.
+returned in testing was real, across every eval run and both models. For an
+attendee this fails safe: they may miss a session, they will not turn up to
+one that doesn't exist.
 
 Others, smaller:
 
@@ -264,6 +303,11 @@ Others, smaller:
   "Thinking...".
 - **No retry button.** A failed request (including a Gemini free-tier 429) is
   retried by asking again.
+- **Gemini's free tier is genuinely small.** A handful of requests per minute
+  and a daily cap. The eval paces itself (15s between questions, one 60s
+  retry on a 429), but a day of heavy testing can still exhaust the daily
+  quota - at which point the app's error bubble and the eval's ERROR rows
+  say so rather than hanging.
 
 ---
 
@@ -271,16 +315,11 @@ Others, smaller:
 
 In the order I would actually do it:
 
-1. **The mini eval script.** 8-10 questions with expected id sets, scoring
-   precision, recall and groundedness (do all cited ids exist?) for each
-   provider - so a prompt change can be judged by numbers instead of by
-   reading answers, as I had to do here. First because everything below it is
-   easier to justify once it exists.
-2. **A mock provider** (`--mock`), so the UI can be demoed on a machine with
+1. **A mock provider** (`--mock`), so the UI can be demoed on a machine with
    no model installed.
-3. **Streaming**, so long answers feel responsive.
-4. **Retrieval** - only once the dataset outgrows the context window, per
+2. **Streaming**, so long answers feel responsive.
+3. **Retrieval** - only once the dataset outgrows the context window, per
    design decision 1.
-5. **Make Gemini the default** if an API key is acceptable in production. The
+4. **Make Gemini the default** if an API key is acceptable in production. The
    comparison above shows the remaining accuracy gap is model capability, not
    prompt design, and the provider interface makes it a one-line change.
