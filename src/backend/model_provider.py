@@ -9,7 +9,7 @@ DEFAULT_MODEL = "qwen2.5:7b-instruct"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_MODEL = "gemini-flash-latest"
 
-API_KEY_FILE = Path(__file__).resolve().parent / "api_key.txt"
+API_KEY_FILE = Path("C:/Users/elias/Desktop/SIGMA_Take_Home_Asignment/src/backend/api_key.txt")
 
 class ModelError(Exception):
     """The model could not be reached, or gave us nothing usable."""
@@ -53,8 +53,8 @@ class OllamaProvider:
             ],
             "stream": False,  # wait for the full answer; keeps the frontend simple
             "options": {
-                # Ollama defaults to a 2048-token window, which would silently
-                # truncate the programme, so ask for one big enough to hold it.
+             
+                # set max tokens to 8192, ollama defaults to 2048
                 "num_ctx": 8192,
                 # Zero temperature: we want the data copied back accurately,
                 # not creative writing, and the same answer every time.
@@ -93,8 +93,7 @@ class GeminiProvider:
     """Talks to Google's Gemini API on its free tier.
 
     Same single method as OllamaProvider, so the rest of the app cannot tell
-    the difference. The key is read per request, so you can paste it into
-    api_key.txt without restarting the server.
+    the difference.
     """
 
     def __init__(self, model=GEMINI_MODEL, timeout=60):
@@ -102,6 +101,15 @@ class GeminiProvider:
         self.timeout = timeout
 
     def complete(self, system_prompt: str, question: str) -> str:
+        api_key = read_api_key()
+        if not api_key:
+            # Caught here rather than letting Google answer with a raw 403 the
+            # person in the browser cannot act on.
+            raise ModelError(
+                f"No Gemini API key. Put GEMINI_API=<your key> in "
+                f"{API_KEY_FILE.name}, or switch back to Ollama."
+            )
+
         payload = {
             # Gemini keeps the system prompt in its own field rather than as a
             # message, but the content is identical to the Ollama version.
@@ -115,7 +123,7 @@ class GeminiProvider:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "x-goog-api-key": read_api_key(),
+                "x-goog-api-key": api_key,
             },
         )
 
