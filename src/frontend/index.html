@@ -169,9 +169,11 @@
         body: JSON.stringify({ question: question })
       });
 
-      if (!response.ok) throw new Error("Server returned " + response.status);
-
       var data = await response.json();
+
+      // host.py sends {"error": "..."} when the model can't be reached.
+      if (!response.ok) throw new Error(data.error || "Server returned " + response.status);
+
       reply.textContent = data.answer;
     } catch (error) {
       reply.className = "message error";
