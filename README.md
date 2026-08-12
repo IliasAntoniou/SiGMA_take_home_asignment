@@ -60,6 +60,19 @@ The model name is `gemini-flash-latest`, an alias rather than a pinned version:
 Google retires specific names (`gemini-2.5-flash` already 404s for new keys)
 and the alias keeps following the current free-tier Flash model.
 
+### Running without any model (mock mode)
+
+To see the UI working on a machine with no model installed and no API key:
+
+```bash
+python src/backend/orchestrator.py --mock
+```
+
+This swaps both providers for `MockProvider`, which returns a canned answer
+citing real records after a short pause. Everything around the model behaves
+exactly as it would live - the loading state, the source chips, the error
+handling - so the whole pipeline can be demoed in seconds.
+
 ---
 
 ## Architecture
@@ -72,7 +85,7 @@ Browser (index.html)
 orchestrator.py      HTTP server: routing, validation, prompt building, errors
     |
     v
-model_provider.py    Ollama / Gemini adapters - the only code that talks to an LLM
+model_provider.py    Ollama / Gemini / Mock - the only code that talks to an LLM
     |                       |
     v                       v
 Ollama (localhost:11434)    Gemini API
@@ -83,7 +96,7 @@ qwen2.5:7b-instruct         gemini-flash-latest
 |---|---|
 | [`src/frontend/index.html`](src/frontend/index.html) | Whole UI: markup, styling, ~80 lines of JS. No framework. |
 | [`src/backend/orchestrator.py`](src/backend/orchestrator.py) | Serves the frontend, renders the dataset into the system prompt, handles `POST /api/chat`, validates the ids each answer cites, turns failures into readable JSON errors. |
-| [`src/backend/model_provider.py`](src/backend/model_provider.py) | The swappable model adapters: Ollama and Gemini. |
+| [`src/backend/model_provider.py`](src/backend/model_provider.py) | The swappable model adapters: Ollama, Gemini and Mock. |
 | [`src/backend/eval.py`](src/backend/eval.py) | The mini eval: ten questions with expected id sets, scored for precision, recall and groundedness. |
 | [`src/backend/data/eval_questions.json`](src/backend/data/eval_questions.json) | The eval questions; each notes the deterministic filter its expected ids come from. |
 | `src/backend/api_key.txt` | Your Gemini key. Gitignored, so it is never committed. |
@@ -98,12 +111,13 @@ is the only file that knows about LLMs.
 complete(system_prompt: str, question: str) -> str
 ```
 
-`OllamaProvider` and `GeminiProvider` both implement it, and `orchestrator.py`
-holds one instance of each in a dict keyed by name. The UI sends
+`OllamaProvider`, `GeminiProvider` and `MockProvider` all implement it, and
+`orchestrator.py` holds the live ones in a dict keyed by name. The UI sends
 `{"question": ..., "provider": "gemini"}`, so switching model happens per
-question with no restart.
+question with no restart; `--mock` swaps both entries for `MockProvider` at
+startup.
 
-Adding another backend means writing a third class with that one method and
+Adding another backend means writing a fourth class with that one method and
 adding one line to the `PROVIDERS` dict - nothing else in the codebase changes,
 because nothing else knows an LLM exists.
 
@@ -315,11 +329,9 @@ Others, smaller:
 
 In the order I would actually do it:
 
-1. **A mock provider** (`--mock`), so the UI can be demoed on a machine with
-   no model installed.
-2. **Streaming**, so long answers feel responsive.
-3. **Retrieval** - only once the dataset outgrows the context window, per
+1. **Streaming**, so long answers feel responsive.
+2. **Retrieval** - only once the dataset outgrows the context window, per
    design decision 1.
-4. **Make Gemini the default** if an API key is acceptable in production. The
+3. **Make Gemini the default** if an API key is acceptable in production. The
    comparison above shows the remaining accuracy gap is model capability, not
    prompt design, and the provider interface makes it a one-line change.

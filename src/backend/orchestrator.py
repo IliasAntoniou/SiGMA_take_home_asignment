@@ -8,10 +8,11 @@ HTTP; model_provider.py is the only file that knows about LLMs.
 import json
 import os
 import re
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from model_provider import GeminiProvider, ModelError, OllamaProvider
+from model_provider import GeminiProvider, MockProvider, ModelError, OllamaProvider
 
 PORT = 8000
 
@@ -242,6 +243,14 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    # --mock swaps both real models for the canned MockProvider, so the UI
+    # can be demoed on a machine with nothing installed. Only reachable from
+    # the command line - importing this module (as eval.py does) never mocks.
+    if "--mock" in sys.argv:
+        for name in PROVIDERS:
+            PROVIDERS[name] = MockProvider()
+        print("Mock mode: answers are canned, no model is called.")
+
     # On Windows, SO_REUSEADDR lets a second server bind an in-use port
     # instead of failing, and the two then fight over requests. Bind
     # exclusively there, so a second instance fails loudly instead.

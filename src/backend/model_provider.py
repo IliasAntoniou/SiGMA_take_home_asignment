@@ -1,4 +1,5 @@
 import json
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -145,3 +146,23 @@ class GeminiProvider:
         except (KeyError, IndexError):
             # Happens when the answer is blocked by a safety filter.
             raise ModelError(f"Gemini returned no usable answer: {str(body)[:200]}")
+
+class MockProvider:
+    """A canned answer, so the UI can be demoed with no model installed.
+
+    Only reachable by starting the server with `orchestrator.py --mock`; it is
+    never in the providers dict otherwise. The reply cites real ids so the
+    source chips render, and the short pause keeps the "Thinking..." state
+    visible - everything around the model behaves exactly as it would live.
+    """
+
+    def complete(self, system_prompt: str, question: str) -> str:
+        time.sleep(1)  # long enough to see the loading bubble
+        return (
+            "Matches: [S014] [E001]\n\n"
+            "[S014] 13:00-13:45 | Room: Main Stage | Title: Agentic AI: When "
+            "Chatbots Start Taking Actions\n"
+            "[E001] PayVault | Category: Payments | Stand: A12\n\n"
+            "(Mock mode - this canned answer proves the pipeline without "
+            "calling a model. Restart without --mock for real answers.)"
+        )
