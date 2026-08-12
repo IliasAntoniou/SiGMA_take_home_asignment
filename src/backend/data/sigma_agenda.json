@@ -1,0 +1,681 @@
+{
+  "event": {
+    "name": "SiGMA Malta 2026 (fictional dataset)",
+    "venue": "Mediterranean Expo Centre, Ta' Qali, Malta",
+    "dates": "10-12 November 2026",
+    "note": "Synthetic data created for a recruitment exercise. All companies and people are fictional."
+  },
+  "sessions": [
+    {
+      "id": "S001",
+      "title": "Opening Keynote: The Next Decade of iGaming",
+      "track": "AI & Emerging Tech",
+      "day": "Tuesday 2026-11-10",
+      "start": "09:00",
+      "end": "09:45",
+      "room": "Main Stage",
+      "speakers": [
+        "Elena Vassallo (CEO, PlayForge)"
+      ],
+      "abstract": "A look at the forces reshaping the industry: AI-driven personalisation, tightening regulation, and new markets."
+    },
+    {
+      "id": "S002",
+      "title": "LLMs on the Casino Floor: Real Deployments",
+      "track": "AI & Emerging Tech",
+      "day": "Tuesday 2026-11-10",
+      "start": "10:00",
+      "end": "10:45",
+      "room": "Main Stage",
+      "speakers": [
+        "Marc Delia (CTO, SpinLogic)",
+        "Ana Ribeiro (Head of AI, BetNova)"
+      ],
+      "abstract": "Case studies of large language models in production: player support, responsible-gaming interventions, and content ops."
+    },
+    {
+      "id": "S003",
+      "title": "Prompt to Production: Shipping AI Features Safely",
+      "track": "AI & Emerging Tech",
+      "day": "Tuesday 2026-11-10",
+      "start": "11:00",
+      "end": "11:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Tomas Berg (Principal Engineer, Kindred Labs)"
+      ],
+      "abstract": "Evaluation harnesses, guardrails and rollback strategies for LLM features in regulated environments."
+    },
+    {
+      "id": "S004",
+      "title": "Panel: Can Regulators Keep Up with AI?",
+      "track": "Regulation & Compliance",
+      "day": "Tuesday 2026-11-10",
+      "start": "11:00",
+      "end": "12:00",
+      "room": "Main Stage",
+      "speakers": [
+        "Dr. Miriam Grech (MGA)",
+        "Jonas Kold (Spillemyndigheden)",
+        "Lucia Ferri (Legal, BetNova)"
+      ],
+      "abstract": "European regulators and operators debate AI transparency, automated decision-making and player protection."
+    },
+    {
+      "id": "S005",
+      "title": "KYC in 2026: Biometrics, Risk Scores and Friction",
+      "track": "Regulation & Compliance",
+      "day": "Tuesday 2026-11-10",
+      "start": "13:00",
+      "end": "13:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Sophie Laurent (VP Compliance, VeriPlay)"
+      ],
+      "abstract": "Balancing onboarding conversion against AML obligations with modern identity stacks."
+    },
+    {
+      "id": "S006",
+      "title": "Instant Payouts: The New Table Stakes",
+      "track": "Payments & Fintech",
+      "day": "Tuesday 2026-11-10",
+      "start": "13:00",
+      "end": "13:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Karl Mifsud (CEO, PayVault)"
+      ],
+      "abstract": "Why withdrawal speed is now the #1 retention lever, and the rails that make it possible."
+    },
+    {
+      "id": "S007",
+      "title": "Stablecoins & Crypto Cashiers in Regulated Markets",
+      "track": "Payments & Fintech",
+      "day": "Tuesday 2026-11-10",
+      "start": "14:00",
+      "end": "14:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Nadia Osei (Head of Crypto, LedgerPlay)"
+      ],
+      "abstract": "Where crypto payments legally fit in Europe, and the compliance tooling required."
+    },
+    {
+      "id": "S008",
+      "title": "Affiliate Compliance: Advertising Rules Across Europe",
+      "track": "Affiliate Marketing",
+      "day": "Tuesday 2026-11-10",
+      "start": "14:00",
+      "end": "14:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Pieter Janssen (Founder, TrafficWise)"
+      ],
+      "abstract": "A market-by-market tour of what affiliates can and cannot say in 2026."
+    },
+    {
+      "id": "S009",
+      "title": "Building Games Players Return To",
+      "track": "Casino & Game Design",
+      "day": "Tuesday 2026-11-10",
+      "start": "15:00",
+      "end": "15:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Yuki Tanaka (Game Director, Lumina Studios)"
+      ],
+      "abstract": "Session design, reward pacing and the psychology of healthy engagement."
+    },
+    {
+      "id": "S010",
+      "title": "Esports Betting: Integrity First",
+      "track": "Esports & Player Experience",
+      "day": "Tuesday 2026-11-10",
+      "start": "16:00",
+      "end": "16:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Carlos Mendes (Integrity Lead, GGWatch)"
+      ],
+      "abstract": "Match-fixing detection, data rights and the maturing esports betting market."
+    },
+    {
+      "id": "S011",
+      "title": "Keynote: Responsible Gaming as a Product Feature",
+      "track": "Regulation & Compliance",
+      "day": "Wednesday 2026-11-11",
+      "start": "09:00",
+      "end": "09:45",
+      "room": "Main Stage",
+      "speakers": [
+        "Dr. Anna Lindqvist (Chief Safety Officer, NordicBet Group)"
+      ],
+      "abstract": "Why safer-gambling tooling is becoming a competitive advantage, not a cost centre."
+    },
+    {
+      "id": "S012",
+      "title": "RAG vs Fine-Tuning for iGaming Content",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "10:00",
+      "end": "10:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Ana Ribeiro (Head of AI, BetNova)"
+      ],
+      "abstract": "A practical comparison for grounded chatbots, CRM copy and localisation pipelines."
+    },
+    {
+      "id": "S013",
+      "title": "AI-Powered Fraud Detection at Scale",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "11:00",
+      "end": "11:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Dmitri Volkov (Data Science Lead, ShieldBet)"
+      ],
+      "abstract": "Graph models and anomaly detection catching bonus abuse and multi-accounting in real time."
+    },
+    {
+      "id": "S014",
+      "title": "Agentic AI: When Chatbots Start Taking Actions",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "13:00",
+      "end": "13:45",
+      "room": "Main Stage",
+      "speakers": [
+        "Tomas Berg (Kindred Labs)",
+        "Marc Delia (SpinLogic)"
+      ],
+      "abstract": "Tool-calling assistants that can change deposit limits, book rewards or freeze accounts — and the controls they need."
+    },
+    {
+      "id": "S015",
+      "title": "Wednesday Workshop: Hands-On with Open-Weight Models",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "14:00",
+      "end": "15:30",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Ines Fernandez (DevRel, Ollama)"
+      ],
+      "abstract": "Bring a laptop: running Llama-class models locally for prototyping in privacy-sensitive settings."
+    },
+    {
+      "id": "S016",
+      "title": "The Great Reg Debate: Advertising Bans",
+      "track": "Regulation & Compliance",
+      "day": "Wednesday 2026-11-11",
+      "start": "13:00",
+      "end": "14:00",
+      "room": "Vista Hall",
+      "speakers": [
+        "Panel of 4 speakers"
+      ],
+      "abstract": "Do blanket gambling-ad bans reduce harm or push players to black markets? Evidence from three jurisdictions."
+    },
+    {
+      "id": "S017",
+      "title": "Payments Panel: Open Banking Meets iGaming",
+      "track": "Payments & Fintech",
+      "day": "Wednesday 2026-11-11",
+      "start": "14:00",
+      "end": "15:00",
+      "room": "Harbour Room",
+      "speakers": [
+        "Karl Mifsud (PayVault)",
+        "Greta Borg (FinLink)",
+        "Sam Ochieng (TrustRail)"
+      ],
+      "abstract": "Account-to-account payments, instant KYC data and the death of the card form."
+    },
+    {
+      "id": "S018",
+      "title": "SEO After AI Overviews: Affiliate Survival Guide",
+      "track": "Affiliate Marketing",
+      "day": "Wednesday 2026-11-11",
+      "start": "10:00",
+      "end": "10:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Chloe Martin (CMO, CompareBets)"
+      ],
+      "abstract": "Traffic strategies for a world where search engines answer directly."
+    },
+    {
+      "id": "S019",
+      "title": "Live Casino: Latency, Streaming and Immersion",
+      "track": "Casino & Game Design",
+      "day": "Wednesday 2026-11-11",
+      "start": "15:00",
+      "end": "15:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Viktor Petrov (Product VP, RealDeal Live)"
+      ],
+      "abstract": "Engineering the sub-second experiences behind modern live dealer studios."
+    },
+    {
+      "id": "S020",
+      "title": "Player Experience Analytics: From Funnels to Feelings",
+      "track": "Esports & Player Experience",
+      "day": "Wednesday 2026-11-11",
+      "start": "16:00",
+      "end": "16:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Maria Ellul (Head of UXR, PlayForge)"
+      ],
+      "abstract": "Mixing behavioural data with qualitative research to find what churns players."
+    },
+    {
+      "id": "S021",
+      "title": "Keynote: Emerging Markets, Emerging Rules",
+      "track": "Regulation & Compliance",
+      "day": "Thursday 2026-11-12",
+      "start": "09:00",
+      "end": "09:45",
+      "room": "Main Stage",
+      "speakers": [
+        "Adaeze Nwosu (Director, LagosGaming Board)"
+      ],
+      "abstract": "Licensing landscapes in Africa and LatAm, and what serious operators must prepare for."
+    },
+    {
+      "id": "S022",
+      "title": "Synthetic Data for Safer ML in Gambling",
+      "track": "AI & Emerging Tech",
+      "day": "Thursday 2026-11-12",
+      "start": "10:00",
+      "end": "10:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Dr. Priya Sharma (Research Lead, SafeStake)"
+      ],
+      "abstract": "Training risk models without exposing real player data."
+    },
+    {
+      "id": "S023",
+      "title": "Semantic Caching: Cutting LLM Costs by 60%",
+      "track": "AI & Emerging Tech",
+      "day": "Thursday 2026-11-12",
+      "start": "11:00",
+      "end": "11:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Ilia Papadopoulos (Staff Engineer, QueryCache)"
+      ],
+      "abstract": "Embedding-based caches for high-volume assistants: thresholds, false positives, and failure modes."
+    },
+    {
+      "id": "S024",
+      "title": "Voice & Multimodal Interfaces for Betting",
+      "track": "AI & Emerging Tech",
+      "day": "Thursday 2026-11-12",
+      "start": "13:00",
+      "end": "13:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Jae Kim (Founder, TalkOdds)"
+      ],
+      "abstract": "Beyond the chat box: speech, vision and the accessibility dividend."
+    },
+    {
+      "id": "S025",
+      "title": "Closing Panel: AI Ethics in a Betting Company",
+      "track": "AI & Emerging Tech",
+      "day": "Thursday 2026-11-12",
+      "start": "16:00",
+      "end": "17:00",
+      "room": "Main Stage",
+      "speakers": [
+        "Dr. Anna Lindqvist",
+        "Ana Ribeiro",
+        "Dr. Miriam Grech"
+      ],
+      "abstract": "Personalisation vs exploitation: where the industry should draw its own lines before regulators do."
+    },
+    {
+      "id": "S026",
+      "title": "AML Deep Dive: Source of Funds in Practice",
+      "track": "Regulation & Compliance",
+      "day": "Thursday 2026-11-12",
+      "start": "10:00",
+      "end": "10:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Robert Zammit (MLRO, Grand Casino Group)"
+      ],
+      "abstract": "Practical workflows for source-of-wealth checks that don't destroy VIP relationships."
+    },
+    {
+      "id": "S027",
+      "title": "Chargebacks and Friendly Fraud",
+      "track": "Payments & Fintech",
+      "day": "Thursday 2026-11-12",
+      "start": "11:00",
+      "end": "11:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Greta Borg (COO, FinLink)"
+      ],
+      "abstract": "Dispute automation and evidence packages that actually win."
+    },
+    {
+      "id": "S028",
+      "title": "Affiliate Data Deals: Postbacks, Privacy and GDPR",
+      "track": "Affiliate Marketing",
+      "day": "Thursday 2026-11-12",
+      "start": "13:00",
+      "end": "13:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Pieter Janssen (TrafficWise)",
+        "Lucia Ferri (BetNova)"
+      ],
+      "abstract": "Tracking without third-party cookies while staying on the right side of EU privacy law."
+    },
+    {
+      "id": "S029",
+      "title": "Slots Mathematics Masterclass",
+      "track": "Casino & Game Design",
+      "day": "Thursday 2026-11-12",
+      "start": "14:00",
+      "end": "15:30",
+      "room": "Vista Hall",
+      "speakers": [
+        "Dr. Emil Novak (Math Lead, Lumina Studios)"
+      ],
+      "abstract": "RTP, volatility curves and certification: a workshop for producers and engineers."
+    },
+    {
+      "id": "S030",
+      "title": "Grassroots Esports: Building Tomorrow's Audience",
+      "track": "Esports & Player Experience",
+      "day": "Thursday 2026-11-12",
+      "start": "15:00",
+      "end": "15:45",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Sara Haddad (Community Director, ArenaOne)"
+      ],
+      "abstract": "Community tournaments as a sustainable acquisition channel."
+    },
+    {
+      "id": "S031",
+      "title": "Startup Pitch Battle: AI Edition",
+      "track": "AI & Emerging Tech",
+      "day": "Tuesday 2026-11-10",
+      "start": "17:00",
+      "end": "18:00",
+      "room": "Main Stage",
+      "speakers": [
+        "8 startup founders"
+      ],
+      "abstract": "Eight early-stage companies pitch AI products for the gaming industry; judged live."
+    },
+    {
+      "id": "S032",
+      "title": "Networking Breakfast: Women in Gaming",
+      "track": "Esports & Player Experience",
+      "day": "Wednesday 2026-11-11",
+      "start": "08:00",
+      "end": "08:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Hosted by SiGMA Foundation"
+      ],
+      "abstract": "Informal networking with mentors across product, engineering and compliance."
+    },
+    {
+      "id": "S033",
+      "title": "Roundtable: CTOs Off the Record",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "17:00",
+      "end": "18:00",
+      "room": "Skyline Suite",
+      "speakers": [
+        "Invite-only"
+      ],
+      "abstract": "Chatham House rules discussion on build-vs-buy for AI platforms."
+    },
+    {
+      "id": "S034",
+      "title": "Masterclass: Prompt Engineering for CRM Teams",
+      "track": "AI & Emerging Tech",
+      "day": "Thursday 2026-11-12",
+      "start": "09:00",
+      "end": "09:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "Chloe Martin (CompareBets)"
+      ],
+      "abstract": "Templates and evaluation tricks for lifecycle marketing copy at scale."
+    },
+    {
+      "id": "S035",
+      "title": "Fireside: From Card Rooms to Code",
+      "track": "Casino & Game Design",
+      "day": "Tuesday 2026-11-10",
+      "start": "12:00",
+      "end": "12:30",
+      "room": "Main Stage",
+      "speakers": [
+        "Eman P. (Founder, SiGMA)"
+      ],
+      "abstract": "The story of building the world's largest iGaming event brand."
+    },
+    {
+      "id": "S036",
+      "title": "Lightning Talks: Emerging Tech Showcase",
+      "track": "AI & Emerging Tech",
+      "day": "Wednesday 2026-11-11",
+      "start": "12:00",
+      "end": "12:45",
+      "room": "Vista Hall",
+      "speakers": [
+        "6 speakers, 7 minutes each"
+      ],
+      "abstract": "Rapid-fire demos: VR casinos, on-device models, blockchain RNG certification."
+    },
+    {
+      "id": "S037",
+      "title": "Debate: Is the Metaverse Casino Dead?",
+      "track": "Casino & Game Design",
+      "day": "Thursday 2026-11-12",
+      "start": "12:00",
+      "end": "12:30",
+      "room": "Skyline Suite",
+      "speakers": [
+        "2 speakers"
+      ],
+      "abstract": "A short, spirited yes/no debate with audience voting."
+    },
+    {
+      "id": "S038",
+      "title": "Wellness Session: Sustainable Careers in a 24/7 Industry",
+      "track": "Esports & Player Experience",
+      "day": "Tuesday 2026-11-10",
+      "start": "08:00",
+      "end": "08:45",
+      "room": "Harbour Room",
+      "speakers": [
+        "Dr. Laura Vella (Occupational Psychologist)"
+      ],
+      "abstract": "Burnout prevention for operations and trading teams."
+    },
+    {
+      "id": "S039",
+      "title": "Regulator Office Hours",
+      "track": "Regulation & Compliance",
+      "day": "Wednesday 2026-11-11",
+      "start": "15:00",
+      "end": "16:30",
+      "room": "Harbour Room",
+      "speakers": [
+        "MGA staff"
+      ],
+      "abstract": "Book a 15-minute slot with Malta Gaming Authority staff for licensing questions."
+    },
+    {
+      "id": "S040",
+      "title": "Closing Party Briefing & Awards Preview",
+      "track": "Esports & Player Experience",
+      "day": "Thursday 2026-11-12",
+      "start": "17:00",
+      "end": "17:30",
+      "room": "Main Stage",
+      "speakers": [
+        "SiGMA Events Team"
+      ],
+      "abstract": "Logistics for the closing night and a preview of the SiGMA Awards shortlist."
+    }
+  ],
+  "exhibitors": [
+    {
+      "id": "E001",
+      "name": "PayVault",
+      "category": "Payments",
+      "stand": "A12",
+      "description": "Instant payout orchestration for operators; 40+ local payment methods."
+    },
+    {
+      "id": "E002",
+      "name": "FinLink",
+      "category": "Payments",
+      "stand": "A14",
+      "description": "Open-banking payments and account-to-account deposits across the EEA."
+    },
+    {
+      "id": "E003",
+      "name": "TrustRail",
+      "category": "Payments",
+      "stand": "A16",
+      "description": "Risk-scored payment routing and chargeback automation."
+    },
+    {
+      "id": "E004",
+      "name": "LedgerPlay",
+      "category": "Payments / Crypto",
+      "stand": "A18",
+      "description": "Compliant crypto cashier with travel-rule tooling."
+    },
+    {
+      "id": "E005",
+      "name": "BetNova",
+      "category": "Operator",
+      "stand": "B02",
+      "description": "Multi-brand sportsbook and casino operator across 12 regulated markets."
+    },
+    {
+      "id": "E006",
+      "name": "PlayForge",
+      "category": "Operator",
+      "stand": "B04",
+      "description": "Casino-first operator known for its in-house game studio."
+    },
+    {
+      "id": "E007",
+      "name": "NordicBet Group",
+      "category": "Operator",
+      "stand": "B06",
+      "description": "Scandinavian operator with an industry-leading safer-gambling programme."
+    },
+    {
+      "id": "E008",
+      "name": "SpinLogic",
+      "category": "Platform / AI",
+      "stand": "C01",
+      "description": "Player-account platform with embedded AI personalisation APIs."
+    },
+    {
+      "id": "E009",
+      "name": "Kindred Labs",
+      "category": "Platform / AI",
+      "stand": "C03",
+      "description": "R&D arm showcasing LLM guardrails and eval tooling for gaming."
+    },
+    {
+      "id": "E010",
+      "name": "QueryCache",
+      "category": "AI Infrastructure",
+      "stand": "C05",
+      "description": "Semantic caching layer that cuts LLM API spend for high-volume chat."
+    },
+    {
+      "id": "E011",
+      "name": "SafeStake",
+      "category": "AI / Responsible Gaming",
+      "stand": "C07",
+      "description": "ML models for early detection of at-risk play, trained on synthetic data."
+    },
+    {
+      "id": "E012",
+      "name": "ShieldBet",
+      "category": "Fraud & Security",
+      "stand": "C09",
+      "description": "Real-time fraud graph covering bonus abuse and multi-accounting."
+    },
+    {
+      "id": "E013",
+      "name": "VeriPlay",
+      "category": "KYC / Compliance",
+      "stand": "D01",
+      "description": "Biometric onboarding and continuous AML monitoring."
+    },
+    {
+      "id": "E014",
+      "name": "TrafficWise",
+      "category": "Affiliate",
+      "stand": "D03",
+      "description": "Compliance-first affiliate network in 20+ markets."
+    },
+    {
+      "id": "E015",
+      "name": "CompareBets",
+      "category": "Affiliate",
+      "stand": "D05",
+      "description": "Comparison portal with 4M monthly users; AI-generated localised reviews."
+    },
+    {
+      "id": "E016",
+      "name": "Lumina Studios",
+      "category": "Game Studio",
+      "stand": "E01",
+      "description": "Slots and instant-win studio; 200+ certified titles."
+    },
+    {
+      "id": "E017",
+      "name": "RealDeal Live",
+      "category": "Live Casino",
+      "stand": "E03",
+      "description": "Live dealer studios with sub-second streaming stack."
+    },
+    {
+      "id": "E018",
+      "name": "GGWatch",
+      "category": "Esports",
+      "stand": "E05",
+      "description": "Esports integrity monitoring and official data rights."
+    },
+    {
+      "id": "E019",
+      "name": "ArenaOne",
+      "category": "Esports",
+      "stand": "E07",
+      "description": "Grassroots tournament platform and white-label community hubs."
+    },
+    {
+      "id": "E020",
+      "name": "TalkOdds",
+      "category": "AI / Voice",
+      "stand": "C11",
+      "description": "Voice-first betting assistant SDK with built-in responsible-gaming prompts."
+    }
+  ]
+}
