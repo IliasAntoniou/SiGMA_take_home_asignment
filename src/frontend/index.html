@@ -61,6 +61,16 @@
     white-space: pre-wrap;    /* keeps the model's line breaks */
   }
 
+  /* Who said it - the text comes from the data-who attribute set in JS */
+  .message::before {
+    content: attr(data-who);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    opacity: 0.7;
+  }
+
   .you {
     background: #4a1a6e;
     color: #fff;
@@ -75,6 +85,65 @@
     background: #fff2f1;
     border: 1px solid #e8332a;
     color: #b3241d;
+  }
+
+  /* Model switch, sitting to the left of the question box */
+  #providers {
+    display: flex;
+    gap: 4px;
+    background: #f1e9f8;
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .provider {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: #4a1a6e;
+    cursor: pointer;
+  }
+
+  /* The model in use gets the SiGMA purple fill */
+  .provider.selected {
+    background: #4a1a6e;
+    color: #fff;
+  }
+
+  /* Shown before the first question, removed once the chat starts */
+  #empty-state {
+    color: #5c5266;
+    line-height: 1.6;
+  }
+
+  #empty-state h2 {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+    color: #1b1420;
+  }
+
+  #empty-state p {
+    margin: 0 0 16px;
+  }
+
+  .example {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    text-align: left;
+    color: #4a1a6e;
+    background: #fff;
+    border: 1px solid #e6e0ec;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .example:hover {
+    border-color: #4a1a6e;
   }
 
   /* Input row, pinned to the bottom by the body flex layout */
@@ -122,11 +191,30 @@
   </header>
 
   <div id="chat">
-    <div class="column" id="messages"></div>
+    <div class="column">
+      <div id="empty-state">
+        <h2>Ask about SiGMA Malta 2026</h2>
+        <p>
+          I answer from the official programme only - 40 sessions and 20 exhibitors.
+          If something isn't in it, I'll say so rather than guess. Try one of these:
+        </p>
+        <button class="example" type="button">What AI-related talks are on Wednesday afternoon?</button>
+        <button class="example" type="button">Who is speaking about regulation?</button>
+        <button class="example" type="button">I'm a payments startup - which exhibitors should I visit?</button>
+        <button class="example" type="button">Build me a 1-day agenda focused on emerging tech.</button>
+      </div>
+
+      <div id="messages"></div>
+    </div>
   </div>
 
   <div id="composer">
     <form class="column" id="form">
+      <div id="providers">
+        <button class="provider selected" type="button" data-provider="ollama">Ollama</button>
+        <button class="provider" type="button" data-provider="gemini">Gemini</button>
+      </div>
+
       <input id="question" placeholder="Ask about a session, speaker or exhibitor..." autocomplete="off" />
       <button id="send" type="submit">Send</button>
     </form>
@@ -135,14 +223,22 @@
 <script>
   var chat = document.getElementById("chat");
   var messages = document.getElementById("messages");
+  var emptyState = document.getElementById("empty-state");
   var form = document.getElementById("form");
   var input = document.getElementById("question");
   var send = document.getElementById("send");
+  var providers = document.getElementById("providers");
+
+  // Which model answers the next question, and its name for the bubble label.
+  var provider = "ollama";
+  var providerLabel = "Ollama";
 
   // Adds one bubble to the chat and returns it, so we can edit it later.
-  function addMessage(cssClass, text) {
+  // "who" is shown as a small label above the text (see .message::before).
+  function addMessage(cssClass, who, text) {
     var div = document.createElement("div");
     div.className = "message " + cssClass;
+    div.dataset.who = who;
     div.textContent = text;
     messages.appendChild(div);
     chat.scrollTop = chat.scrollHeight;   // keep the newest message in view
@@ -155,18 +251,23 @@
     var question = input.value.trim();
     if (!question) return;
 
-    addMessage("you", question);
+    emptyState.hidden = true;   // first question replaces the intro
+    addMessage("you", "👤 You", question);
     input.value = "";
     send.disabled = true;
 
-    // Placeholder bubble while we wait for host.py to answer.
-    var reply = addMessage("concierge", "Thinking...");
+    // Remember which model was chosen when the question was sent, in case the
+    // user flips the switch while waiting for the answer.
+    var answeredBy = providerLabel;
+
+    // Placeholder bubble while we wait for the backend to answer.
+    var reply = addMessage("concierge", "🤖 " + answeredBy, "Thinking...");
 
     try {
       var response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question })
+        body: JSON.stringify({ question: question, provider: provider })
       });
 
       var data = await response.json();
@@ -177,11 +278,36 @@
       reply.textContent = data.answer;
     } catch (error) {
       reply.className = "message error";
+      reply.dataset.who = "⚠ " + answeredBy + " failed";
       reply.textContent = "Could not reach the concierge: " + error.message;
     }
 
     send.disabled = false;
     input.focus();
+  };
+
+  // Clicking a header button switches which model answers.
+  providers.onclick = function (event) {
+    var clicked = event.target;
+    if (!clicked.dataset.provider) return;
+
+    provider = clicked.dataset.provider;
+    providerLabel = clicked.textContent;
+
+    var buttons = providers.children;
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].className = buttons[i] === clicked ? "provider selected" : "provider";
+    }
+
+    input.focus();
+  };
+
+  // Clicking an example question fills the box and sends it.
+  emptyState.onclick = function (event) {
+    if (event.target.className === "example") {
+      input.value = event.target.textContent;
+      form.requestSubmit();
+    }
   };
 
   input.focus();
