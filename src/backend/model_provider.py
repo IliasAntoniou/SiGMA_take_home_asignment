@@ -9,7 +9,8 @@ DEFAULT_MODEL = "qwen2.5:7b-instruct"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_MODEL = "gemini-flash-latest"
 
-API_KEY_FILE = Path("C:/Users/elias/Desktop/SIGMA_Take_Home_Asignment/src/backend/api_key.txt")
+# Next to this file, wherever the repo is cloned - never an absolute path.
+API_KEY_FILE = Path(__file__).resolve().parent / "api_key.txt"
 
 class ModelError(Exception):
     """The model could not be reached, or gave us nothing usable."""
