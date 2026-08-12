@@ -1,0 +1,5 @@
+# Never commit the API key. api_key.example.txt is the committed template.
+api_key.txt
+
+__pycache__/
+*.pyc
