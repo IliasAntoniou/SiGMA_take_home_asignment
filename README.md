@@ -253,9 +253,10 @@ The brief allows at most two.
 - **Empty state** - before the first question, the page explains what the
   assistant knows and offers four example questions as clickable buttons
   (the same four from the brief).
-- **Loading** - a "Thinking..." bubble appears immediately and is replaced by
-  the answer in place. Send is disabled meanwhile, so no double submits.
-  This matters: a 7B model on CPU takes 10-60 seconds.
+- **Loading** - a "Thinking" bubble with three pulsing dots appears
+  immediately and is replaced by the answer in place (the dots hold steady
+  under `prefers-reduced-motion`). Send is disabled meanwhile, so no double
+  submits. This matters: a 7B model on CPU takes 10-60 seconds.
 - **Errors** - the backend returns `{"error": "..."}` with a message written
   for the person in the browser ("Could not reach Ollama... Is Ollama
   running?"), which the UI shows in a red bubble. The input re-enables, so a
@@ -313,8 +314,8 @@ Others, smaller:
   skipped.
 - **No conversation memory.** Each question is independent, so "and what about
   Thursday?" won't work.
-- **No streaming**, so a slow answer looks like a long pause behind
-  "Thinking...".
+- **No streaming**, so a slow answer looks like a long pause behind the
+  thinking dots.
 - **No retry button.** A failed request (including a Gemini free-tier 429) is
   retried by asking again.
 - **Gemini's free tier is genuinely small.** A handful of requests per minute

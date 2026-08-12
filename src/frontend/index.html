@@ -81,6 +81,38 @@
     border: 1px solid #e6e0ec;
   }
 
+  /* "Thinking" plus three pulsing dots while the model writes - the spans
+     are added in JS and wiped automatically when the answer replaces the
+     bubble's content, and the muted italic reverts with the class. */
+  .thinking {
+    color: #5c5266;
+    font-style: italic;
+  }
+
+  .thinking span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background: #4a1a6e;
+    opacity: 0.25;
+    animation: pulse 1.2s infinite;
+  }
+
+  .thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+    40%           { opacity: 1;    transform: translateY(-3px); }
+  }
+
+  /* A steady indicator for people who opt out of animation */
+  @media (prefers-reduced-motion: reduce) {
+    .thinking span { animation: none; opacity: 0.6; }
+  }
+
   .error {
     background: #fff2f1;
     border: 1px solid #e8332a;
@@ -311,8 +343,12 @@
     // user flips the switch while waiting for the answer.
     var answeredBy = providerLabel;
 
-    // Placeholder bubble while we wait for the backend to answer.
-    var reply = addMessage("concierge", "🤖 " + answeredBy, "Thinking...");
+    // Placeholder bubble while we wait for the backend to answer: "Thinking"
+    // plus three pulsing dots (see .thinking). Setting textContent later
+    // removes the whole thing in one go.
+    var reply = addMessage("concierge", "🤖 " + answeredBy, "Thinking");
+    reply.classList.add("thinking");
+    for (var d = 0; d < 3; d++) reply.appendChild(document.createElement("span"));
 
     try {
       var response = await fetch("/api/chat", {
@@ -326,6 +362,7 @@
       // orchestrator.py sends {"error": "..."} when the model can't be reached.
       if (!response.ok) throw new Error(data.error || "Server returned " + response.status);
 
+      reply.classList.remove("thinking");
       reply.textContent = data.answer;
       addSources(reply, data.sources);
     } catch (error) {
