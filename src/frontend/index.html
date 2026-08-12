@@ -87,6 +87,28 @@
     color: #b3241d;
   }
 
+  /* Source chips under an answer - the records the backend verified it cited.
+     The bubble is pre-wrap for the model's text; chips wrap normally. */
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e6e0ec;
+    white-space: normal;
+  }
+
+  .source {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+    border: 1px solid #e6e0ec;
+    border-radius: 6px;
+    background: #f1e9f8;
+    color: #4a1a6e;
+    cursor: help;            /* hover shows the abstract / description */
+  }
+
   /* Model switch, sitting to the left of the question box */
   #providers {
     display: flex;
@@ -204,7 +226,7 @@
         <button class="example" type="button">Build me a 1-day agenda focused on emerging tech.</button>
       </div>
 
-      <div id="messages"></div>
+      <div id="messages" aria-live="polite"></div>
     </div>
   </div>
 
@@ -245,6 +267,35 @@
     return div;
   }
 
+  // Renders the records the backend verified the answer cited as chips under
+  // the bubble. Everything is set via textContent, so nothing the model wrote
+  // is ever treated as HTML.
+  function addSources(bubble, sources) {
+    if (!sources || !sources.length) return;
+
+    var row = document.createElement("div");
+    row.className = "sources";
+
+    for (var i = 0; i < sources.length; i++) {
+      var s = sources[i];
+      var chip = document.createElement("span");
+      chip.className = "source";
+
+      if (s.title) {   // session: [S014] Title · Wednesday 13:00 · Main Stage
+        chip.textContent = "[" + s.id + "] " + s.title + " · " +
+          s.day.split(" ")[0] + " " + s.start + " · " + s.room;
+        chip.title = "Speakers: " + s.speakers.join(", ") + "\n\n" + s.abstract;
+      } else {         // exhibitor: [E001] Name · Stand A12
+        chip.textContent = "[" + s.id + "] " + s.name + " · Stand " + s.stand;
+        chip.title = s.category + "\n\n" + s.description;
+      }
+
+      row.appendChild(chip);
+    }
+
+    bubble.appendChild(row);
+  }
+
   form.onsubmit = async function (event) {
     event.preventDefault();
 
@@ -272,16 +323,18 @@
 
       var data = await response.json();
 
-      // host.py sends {"error": "..."} when the model can't be reached.
+      // orchestrator.py sends {"error": "..."} when the model can't be reached.
       if (!response.ok) throw new Error(data.error || "Server returned " + response.status);
 
       reply.textContent = data.answer;
+      addSources(reply, data.sources);
     } catch (error) {
       reply.className = "message error";
       reply.dataset.who = "⚠ " + answeredBy + " failed";
       reply.textContent = "Could not reach the concierge: " + error.message;
     }
 
+    chat.scrollTop = chat.scrollHeight;   // the answer replaced "Thinking..."
     send.disabled = false;
     input.focus();
   };
@@ -304,7 +357,7 @@
 
   // Clicking an example question fills the box and sends it.
   emptyState.onclick = function (event) {
-    if (event.target.className === "example") {
+    if (event.target.classList.contains("example")) {
       input.value = event.target.textContent;
       form.requestSubmit();
     }

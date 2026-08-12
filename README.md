@@ -5,7 +5,8 @@ A small web app where an attendee can ask natural-language questions about
 (40 sessions, 20 exhibitors).
 
 Python standard library on the backend, one HTML file on the frontend, a local
-model through Ollama. No paid APIs, no pip install, no build step.
+model through Ollama or Gemini's free tier. No paid APIs, no pip install, no
+build step.
 
 ---
 
@@ -20,7 +21,7 @@ ollama pull qwen2.5:7b-instruct
 **2. Start the server** (Python 3.9+, no dependencies):
 
 ```bash
-python src/backend/orchistrator.py
+python src/backend/orchestrator.py
 ```
 
 **3. Open <http://localhost:8000>** and ask a question.
@@ -28,15 +29,23 @@ python src/backend/orchistrator.py
 The terminal logs every question and answer, so you can watch requests arrive.
 `Ctrl+C` stops the server.
 
+> Open the page through the server, not by double-clicking `index.html`. The
+> frontend calls `/api/chat`, which only exists when the server is serving it.
+
 ### Using Gemini instead (free tier)
 
-The header has a **Local model / Gemini** switch, which chooses who answers the
-next question. To enable the Gemini side:
+The switch next to the question box chooses who answers the next question:
+**Ollama** or **Gemini**. To enable the Gemini side:
 
 1. Get a free key at <https://aistudio.google.com/apikey>.
-2. Paste it on its own line in `src/backend/api_key.txt`, creating that file if
-   it isn't there. Lines starting with `#` are ignored, so you can keep notes in it.
-3. Click **Gemini** in the header. No restart needed - the key is read per request.
+2. Create `src/backend/api_key.txt` containing one line:
+
+   ```
+   GEMINI_API=<your key>
+   ```
+
+   Lines starting with `#` are ignored, so you can keep notes in the file.
+3. Click **Gemini**. No restart needed - the key is read per request.
 
 `api_key.txt` is listed in `.gitignore`, so the key is never committed.
 
@@ -51,51 +60,35 @@ The model name is `gemini-flash-latest`, an alias rather than a pinned version:
 Google retires specific names (`gemini-2.5-flash` already 404s for new keys)
 and the alias keeps following the current free-tier Flash model.
 
-### Running without Ollama
-
-To see the UI working on a machine with no model installed:
-
-```bash
-python src/backend/orchistrator.py --mock
-```
-
-This swaps in `MockProvider`, which returns a canned answer. Everything else -
-the UI, the loading state, the error handling - behaves identically.
-
-> Open the page through the server, not by double-clicking `index.html`. The
-> frontend calls `/api/chat`, which only exists when the server is serving it.
-
 ---
 
 ## Architecture
 
 ```
 Browser (index.html)
-    |  POST /api/chat  {"question": "..."}
+    |  POST /api/chat  {"question": "...", "provider": "ollama" | "gemini"}
+    |  <- {"answer": "...", "sources": [the records the answer cited]}
     v
-orchistrator.py      HTTP server: routing, request validation, error responses
+orchestrator.py      HTTP server: routing, validation, prompt building, errors
     |
     v
-concierge.py         Answers questions: filter, build prompt, call the model
-    |
-    +--> filters.py   Picks the records the question could be about
-    |
-    v
-model_provider.py    Ollama / Gemini / Mock - the only code that talks to an LLM
-    |
-    v
-Ollama (localhost:11434) -> qwen2.5:7b-instruct
+model_provider.py    Ollama / Gemini adapters - the only code that talks to an LLM
+    |                       |
+    v                       v
+Ollama (localhost:11434)    Gemini API
+qwen2.5:7b-instruct         gemini-flash-latest
 ```
 
 | File | Responsibility |
 |---|---|
-| [`src/frontend/index.html`](src/frontend/index.html) | Whole UI: markup, styling, ~50 lines of JS. No framework. |
-| [`src/backend/orchistrator.py`](src/backend/orchistrator.py) | Serves the frontend, handles `POST /api/chat`, turns failures into readable JSON errors. |
-| [`src/backend/concierge.py`](src/backend/concierge.py) | Reads `sigma_agenda.json`, renders the relevant records into the system prompt, answers questions. |
-| [`src/backend/filters.py`](src/backend/filters.py) | Exact-match filter: which sessions and exhibitors could this question be about? |
-| [`src/backend/model_provider.py`](src/backend/model_provider.py) | The swappable model adapters: Ollama, Gemini, Mock. |
-| `src/backend/api_key.txt` | Your Gemini key, on one line. Gitignored, so it is never committed. |
+| [`src/frontend/index.html`](src/frontend/index.html) | Whole UI: markup, styling, ~80 lines of JS. No framework. |
+| [`src/backend/orchestrator.py`](src/backend/orchestrator.py) | Serves the frontend, renders the dataset into the system prompt, handles `POST /api/chat`, validates the ids each answer cites, turns failures into readable JSON errors. |
+| [`src/backend/model_provider.py`](src/backend/model_provider.py) | The swappable model adapters: Ollama and Gemini. |
+| `src/backend/api_key.txt` | Your Gemini key. Gitignored, so it is never committed. |
 | [`src/backend/data/sigma_agenda.json`](src/backend/data/sigma_agenda.json) | The provided dataset, unmodified. |
+
+`orchestrator.py` is the only file that knows about HTTP; `model_provider.py`
+is the only file that knows about LLMs.
 
 **Swapping the model provider.** Every provider exposes one method:
 
@@ -103,168 +96,174 @@ Ollama (localhost:11434) -> qwen2.5:7b-instruct
 complete(system_prompt: str, question: str) -> str
 ```
 
-`OllamaProvider`, `GeminiProvider` and `MockProvider` all implement it, and
-`Concierge` holds them in a dict keyed by name. The UI sends
+`OllamaProvider` and `GeminiProvider` both implement it, and `orchestrator.py`
+holds one instance of each in a dict keyed by name. The UI sends
 `{"question": ..., "provider": "gemini"}`, so switching model happens per
 question with no restart.
 
-Adding another backend means writing a fourth class with that one method and
-adding it to the dict in `main()` - nothing else in the codebase changes,
+Adding another backend means writing a third class with that one method and
+adding one line to the `PROVIDERS` dict - nothing else in the codebase changes,
 because nothing else knows an LLM exists.
 
 ---
 
 ## AI design decisions
 
-### 1. Exact-match filtering in Python, then stuffing - not embeddings
+### 1. Full-context stuffing - the whole programme in every prompt
 
-The whole programme is only ~3,600 tokens and would fit in one prompt. It is
-still filtered first, because size was never the problem - **the model's
-ability to filter was**. Asked to pick Wednesday-afternoon AI sessions out of
-forty lines, qwen2.5:7b returned morning sessions, wrong-day sessions, and
-missed real matches. Given the four pre-filtered sessions, that class of error
-mostly disappears.
+The rendered programme is ~3,800 tokens and the context window is set to
+8,192, so all of it fits with room to spare for the answer. There is nothing
+to retrieve.
 
-`filters.py` matches the question's words against the values in the dataset:
-"Wednesday" against the day field, "Payments" against tracks and categories,
-"S014" against ids, "14:00" against start and end times, "A12" against stands.
-It works in three steps, each looser than the last:
+The deeper reason is the shape of the questions. "What AI talks are on
+Wednesday afternoon?" is *filter-and-aggregate*: the correct answer is
+**every** match, and an answer missing one looks exactly like a complete one
+to the attendee. Top-k retrieval silently drops the k+1th match - a worse
+failure than the hallucination it is meant to prevent, because nobody can see
+it happen. Stuffing has no cutoff: the model always sees every record, so a
+missed session is a *reading* failure by the model - visible, measurable, and
+measured below - never a *delivery* failure by the pipeline.
 
-1. Ignore question words that appear nowhere in the dataset - "related",
-   "agenda" and "focused" are English, not search terms.
-2. Prefer records matching **every** remaining word, so "Wednesday" + "AI" +
-   "afternoon" gives the sessions that are all three.
-3. If nothing satisfies all of them, accept records matching any one; and if
-   nothing matches at all, send the entire programme.
+I also skipped tool/function calling. It reaches the same grounded place, but
+costs two model round trips per question, which on a local CPU model means
+doubling a 10-60 second wait. Stuffing gets there in one call.
 
-That last step matters: an unmatched question degrades to the original
-behaviour rather than to an empty prompt.
-
-**Why exact matching over embeddings.** These are *filter-and-aggregate*
-questions where the correct answer is **every** match. Top-k retrieval silently
-drops the k+1th, and an incomplete agenda looks exactly like a complete one to
-the user - a worse failure than the hallucination retrieval is meant to
-prevent. Exact matching has no cutoff, no model, no index to keep in sync, and
-you can always explain why a record was kept.
-
-Its weakness is the mirror image: it only finds words that are actually in the
-data. "Crypto" finds the crypto sessions; "blockchain" finds nothing, because
-that word does not appear in the dataset. Embeddings would fix exactly that,
-and that is when I would add them.
-
-I also skipped tool/function calling. It reaches the same place - deterministic
-lookup with the model choosing the arguments - but costs two model round trips
-per question, which on a local CPU model means 20-120 seconds instead of 10-60.
-The filter gets the determinism without the second call.
+The honest cost: this design stops working when the dataset outgrows the
+window. At a real summit with hundreds of sessions, retrieval earns its place -
+that is in [What I would do next](#what-i-would-do-next), to be added when it
+is needed and not before.
 
 ### 2. The prompt is pre-computed structure, not raw JSON
 
-Two deliberate transformations in `concierge.py`:
+Two deliberate transformations in `build_system_prompt()`:
 
-**Compact lines instead of JSON.** Each record becomes one line
-(`[S014] Wednesday 2026-11-11 13:00-13:45 | Agentic AI: ... | Track: ... | Room: ...`).
-Same information as the raw JSON in roughly half the tokens, and easier to scan.
+**Compact lines instead of JSON.** Each record becomes one line:
 
-**Grouped by day and half-day.** Sessions sit under `=== Wednesday 2026-11-11 -
-afternoon ===` headings. This is the single change that most improved accuracy.
-Asked to filter 40 scattered lines by day *and* time-of-day, the 7B model
-regularly returned morning sessions and wrong-day sessions. Given headings, the
-same question becomes "copy the lines under this heading" - a lookup it does
-reliably. **The morning/afternoon comparison happens in Python, where it is
-exact, instead of in the model, where it is a guess.**
+```
+[S014] 13:00-13:45 | Room: Main Stage | Title: Agentic AI: When Chatbots Start Taking Actions | Track: AI & Emerging Tech | Speakers: ...
+```
 
-### 3. Grounding is prompt rules plus IDs
+Same information as the raw JSON in roughly half the tokens, and easier for
+the model to scan. Every field keeps its label - "Room:" binds the value to
+its field, which discourages the model from sliding a room or a time in from
+the neighbouring line. The leading `[S014]` gives it an id to cite.
+
+**Grouped by day and half-day.** Sessions sit under
+`--- Wednesday 2026-11-11 - afternoon ---` headings, computed in Python with a
+plain string compare on the zero-padded start time. This is the single change
+that most improved accuracy: asked to filter 40 scattered lines by day *and*
+time-of-day, the 7B model returned morning sessions and wrong-day sessions.
+Given headings, the same question becomes "copy the lines under this heading" -
+a lookup it does far more reliably. **The morning/afternoon comparison happens
+in Python, where it is exact, instead of in the model, where it is a guess.**
+
+### 3. Data first, instructions last - and the question twice
+
+The prompt is ordered data → rules → question, because attention concentrates
+on the start and end of a long prompt and the middle is where things get
+missed ("lost in the middle"). The rules are what has to survive, so they sit
+at the end, right next to the question.
+
+The question itself is ~10 tokens next to ~3,800 of programme - the easiest
+thing in the prompt to skim past. So it is fenced (`=== THE QUESTION ===`) to
+read as data rather than prose, and repeated verbatim after the instructions
+("re-reading", which measurably improves this kind of answer). The last thing
+the model reads before writing is the question.
+
+### 4. Grounding is prompt rules plus ids
 
 The system prompt forbids inventing records, requires the `[S014]`/`[E001]` id
 of anything mentioned, and instructs the model to say plainly when the
-programme doesn't cover a question. `temperature: 0` keeps answers deterministic
-and copied rather than invented.
+programme doesn't cover a question and offer the closest thing that is in it.
+Answers open with a `Matches: [S014] [S015] ...` line - collecting every id
+before describing any of them is how the model avoids dropping matches, and
+the attendee sees at a glance how many there are. `temperature: 0` on both
+providers keeps answers deterministic and copied rather than invented.
 
 Citing ids also makes wrong answers *checkable* - you can look up `[S014]` and
 see immediately whether it says what the model claimed.
 
-### 4. `num_ctx` is set explicitly
+### 5. `num_ctx` is set explicitly
 
-Ollama defaults to a 2048-token context window, which would silently truncate a
-3,600-token programme - the model would answer from half the data with no error
-anywhere. `model_provider.py` sets `num_ctx: 8192`.
+Ollama defaults to a 2048-token context window, which would silently truncate
+a ~3,800-token programme - the model would answer from half the data with no
+error anywhere. `model_provider.py` sets `num_ctx: 8192`.
 
-### 5. The prompt is rebuilt per question
+### 6. The prompt is built once, at startup
 
-Filtering means the prompt now depends on the question, so it is built per
-request rather than once at startup. That gives up Ollama's reuse of a
-byte-identical cached prefix, but the prompt it has to process is typically a
-quarter of the size (~800 tokens instead of ~3,600), which is the better trade.
+The system prompt does not depend on the question, so it is rendered once at
+import and reused for every request. Ollama caches the KV state of a
+byte-identical prompt prefix, so after the first question the model only has
+to process the few new tokens of the next question, not the whole programme
+again. Per-request work is just framing the question.
 
-Typical sizes, from the server log:
+---
 
-```
-[filter]   4/40 sessions,  6/20 exhibitors (~804 tokens)   "AI talks Wednesday afternoon"
-[filter]   0/40 sessions,  1/20 exhibitors (~336 tokens)   "Where is stand A12?"
-[filter]  40/40 sessions, 20/20 exhibitors (~3644 tokens)  "underwater basket weaving"
-```
+## Stretch goals
+
+The brief allows at most two.
+
+- **Citations** - every answer opens with a `Matches:` line and cites the
+  `[S014]`-style id of each record it mentions. The backend then validates
+  every cited id against the dataset and returns the matching records, which
+  the UI renders as source chips under the answer: title, day, time and room
+  at a glance, the abstract on hover. An id that is not in the dataset is
+  dropped and logged instead of shown - so a hallucinated citation is caught
+  automatically rather than reaching the user dressed up as a real one.
+- **Mini eval** - the planned second pick (next steps, item 1); not built yet.
 
 ---
 
 ## UX states
 
 - **Empty state** - before the first question, the page explains what the
-  assistant knows and offers four example questions as clickable buttons.
+  assistant knows and offers four example questions as clickable buttons
+  (the same four from the brief).
 - **Loading** - a "Thinking..." bubble appears immediately and is replaced by
   the answer in place. Send is disabled meanwhile, so no double submits.
   This matters: a 7B model on CPU takes 10-60 seconds.
 - **Errors** - the backend returns `{"error": "..."}` with a message written
   for the person in the browser ("Could not reach Ollama... Is Ollama
   running?"), which the UI shows in a red bubble. The input re-enables, so a
-  failure never locks the app.
+  failure never locks the app. The bubble is labelled with the model that was
+  selected when the question was *sent*, so flipping the switch mid-wait
+  cannot mislabel an answer.
 
 ---
 
 ## Known limitations
 
-**The 7B model still under-reports, even on a filtered prompt.** This is the
-main limitation, and it is model capability rather than data plumbing. The
-filter itself is exact - on "What AI-related talks are on Wednesday afternoon?"
-it selects S014, S015, S033 and S036, which is precisely the right set - but
-qwen2.5:7b then lists only two of the four records placed in front of it. The
-same prompt on `gemini-flash-latest` lists all four, with correct times and
-rooms:
+**The 7B model under-reports and cross-contaminates, even with everything in
+context.** This is the main limitation, and it is model capability rather than
+data plumbing. On "What AI-related talks are on Wednesday afternoon?" (truth:
+S014, S015, S033, S036 - all four are in the prompt, under one heading):
 
 | | Wednesday-afternoon AI talks (truth: S014, S015, S033, S036) |
 |---|---|
-| filter output | S014, S015, S033, S036 - exactly right |
-| qwen2.5:7b-instruct | S014, S036 - correct but incomplete |
-| gemini-flash-latest | S014, S015, S033, S036 - complete |
+| qwen2.5:7b-instruct | S014, S036 - dropped two, **and** copied S036's room onto S014 |
+| gemini-flash-latest | all four, every time and room correct |
 
-Filtering did fix some of it: "which exhibitors should a payments startup
-visit?" went from three of four to all four (E001-E004). But the conclusion
-from building both paths is that the remaining gap is the model, not the
-grounding. **Use the Gemini switch for accuracy; the local model is the
-zero-setup option.**
+The room error is the exact cross-line contamination the prompt's "copy, don't
+retype" rule targets - evidence that prompt rules narrow this failure but
+cannot close it at 7B. At `temperature: 0` the result is reproducible.
+**Use the Gemini switch for accuracy; the local model is the zero-setup
+option.**
 
 Either way, **it does not invent sessions, speakers or exhibitors** - every id
 returned in testing was real. For an attendee this fails safe: they may miss a
 session, they will not turn up to one that doesn't exist.
 
-**The filter only knows words that are in the data.** "Crypto" matches, because
-`Payments / Crypto` is a category; "blockchain" matches nothing and falls back
-to sending the whole programme. Synonyms, plurals and misspellings are not
-handled - that is the honest cost of exact matching, and where embeddings would
-earn their place.
-
-**Common words that are also data values over-narrow.** "Room" appears in
-"Harbour Room", so "what's on in the Main Stage room?" cannot satisfy all three
-words and falls back to the looser any-word match. It still answers, just with
-more records than needed.
-
 Others, smaller:
 
+- **The whole programme rides in every prompt.** Fine at 40 sessions; a
+  dataset ten times larger would need the retrieval this design deliberately
+  skipped.
 - **No conversation memory.** Each question is independent, so "and what about
   Thursday?" won't work.
-- **No streaming**, so a slow answer looks like a long pause behind "Thinking...".
-- **Ids aren't validated.** If the model did invent `[S099]`, nothing catches it.
-- **Single-turn errors only.** A failed request can be retried by asking again,
-  but there is no retry button.
+- **No streaming**, so a slow answer looks like a long pause behind
+  "Thinking...".
+- **No retry button.** A failed request (including a Gemini free-tier 429) is
+  retried by asking again.
 
 ---
 
@@ -272,19 +271,16 @@ Others, smaller:
 
 In the order I would actually do it:
 
-1. **A small eval script.** 8-10 questions with expected id sets, scoring
-   precision and recall for the filter and for each model separately - so a
-   prompt or filter change can be judged by numbers instead of by reading
-   answers, as I had to do here. This is first because everything below it is
+1. **The mini eval script.** 8-10 questions with expected id sets, scoring
+   precision, recall and groundedness (do all cited ids exist?) for each
+   provider - so a prompt change can be judged by numbers instead of by
+   reading answers, as I had to do here. First because everything below it is
    easier to justify once it exists.
-2. **Validate the cited ids.** Regex `[S###]`/`[E###]` out of the answer and
-   check each against the records that were actually in the prompt. Cheap, and
-   turns hallucination from undetectable into caught-automatically.
-3. **Synonyms for the filter.** A small hand-written map ("blockchain" ->
-   "crypto", "compliance" -> "regulation") covers most of the gap without an
-   embedding model. Embeddings only once that stops being enough.
-4. **Streaming**, so long answers feel responsive.
+2. **A mock provider** (`--mock`), so the UI can be demoed on a machine with
+   no model installed.
+3. **Streaming**, so long answers feel responsive.
+4. **Retrieval** - only once the dataset outgrows the context window, per
+   design decision 1.
 5. **Make Gemini the default** if an API key is acceptable in production. The
    comparison above shows the remaining accuracy gap is model capability, not
-   prompt or filter design, and the provider interface makes it a one-line
-   change.
+   prompt design, and the provider interface makes it a one-line change.

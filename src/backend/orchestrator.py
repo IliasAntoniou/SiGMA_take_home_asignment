@@ -6,6 +6,8 @@ HTTP; model_provider.py is the only file that knows about LLMs.
 """
 
 import json
+import os
+import re
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -17,6 +19,12 @@ PORT = 8000
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 DATA_FILE = Path(__file__).resolve().parent / "data" / "sigma_agenda.json"
 
+# The dataset, read once at startup, and every record by its id. The id table
+# backs the source chips under each answer: an id the model cites reaches the
+# UI only if it is really in the dataset.
+DATA = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+RECORDS = {record["id"]: record for record in DATA["sessions"] + DATA["exhibitors"]}
+
 # The frontend sends {"provider": "ollama"} or {"provider": "gemini"}; these
 # keys are those strings. Both providers are stateless, so one instance each is
 # enough to serve every request. Adding a third model means adding a line here.
@@ -26,7 +34,7 @@ PROVIDERS = {
 }
 
 
-def build_system_prompt(path: Path = DATA_FILE) -> str:
+def build_system_prompt(data: dict = DATA) -> str:
     """Render the whole programme, then the rules, into the system prompt.
 
     The dataset is ~3,600 tokens, so all of it fits in one prompt and there is
@@ -45,7 +53,6 @@ def build_system_prompt(path: Path = DATA_FILE) -> str:
     reading the lines under one heading. The day then lives in the heading
     instead of on every line, so there is less to copy and less to get wrong.
     """
-    data = json.loads(path.read_text(encoding="utf-8"))
     event = data["event"]
 
     slots = {}
@@ -142,6 +149,32 @@ def frame_question(question: str) -> str:
     )
 
 
+# What a citation looks like in an answer: [S014] or [E001].
+CITED_ID = re.compile(r"\[([SE]\d{3})\]")
+
+
+def extract_sources(answer: str) -> list:
+    """The records behind an answer, in the order it first cited them.
+
+    Every [S###]/[E###] in the answer is looked up in RECORDS. Real ids come
+    back as full records for the UI to render as source chips; an invented id
+    is dropped and logged, so a hallucinated citation can never reach the
+    user dressed up as a real one.
+    """
+    sources = []
+    seen = set()
+    for cited in CITED_ID.findall(answer):
+        if cited in seen:
+            continue
+        seen.add(cited)
+        record = RECORDS.get(cited)
+        if record is None:
+            print(f"[cite] ! answer cites {cited}, which is not in the dataset", flush=True)
+        else:
+            sources.append(record)
+    return sources
+
+
 class ConciergeHandler(SimpleHTTPRequestHandler):
     """Static files for every GET, plus the one dynamic route: /api/chat."""
 
@@ -191,9 +224,13 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
             print(f"[{name}] ! {error}", flush=True)
             self.send_json(502, {"error": str(error)})
             return
+        except Exception as error:  # last resort - never crash the request
+            print(f"[{name}] ! unexpected: {error!r}", flush=True)
+            self.send_json(500, {"error": "Something went wrong on the server. Try again."})
+            return
 
         print(f"[{name}] < {answer}", flush=True)
-        self.send_json(200, {"answer": answer})
+        self.send_json(200, {"answer": answer, "sources": extract_sources(answer)})
 
     def send_json(self, status: int, payload: dict):
         body = json.dumps(payload).encode("utf-8")
@@ -205,9 +242,20 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    # On Windows, SO_REUSEADDR lets a second server bind an in-use port
+    # instead of failing, and the two then fight over requests. Bind
+    # exclusively there, so a second instance fails loudly instead.
+    if os.name == "nt":
+        ThreadingHTTPServer.allow_reuse_address = False
+
     # Threading so a slow model answer does not block the browser from
     # fetching the page or the logo.
-    server = ThreadingHTTPServer(("", PORT), ConciergeHandler)
+    try:
+        server = ThreadingHTTPServer(("", PORT), ConciergeHandler)
+    except OSError:
+        print(f"Port {PORT} is already in use - is the server already running?")
+        return
+
     print(f"SiGMA Event Concierge: http://localhost:{PORT}  (Ctrl+C to stop)")
 
     try:
