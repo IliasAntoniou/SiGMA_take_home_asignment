@@ -10,12 +10,18 @@ DEFAULT_MODEL = "qwen2.5:7b-instruct"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_MODEL = "gemini-flash-latest"
 
-# Next to this file, wherever the repo is cloned - never an absolute path.
+# Not absolute path so that the application can be run from anywhere, and so that the file is in the same directory
+# as the code that reads it.
 API_KEY_FILE = Path(__file__).resolve().parent / "api_key.txt"
 
+
+#model error raised when the model cannot be reached or returns nothing usable.
 class ModelError(Exception):
     """The model could not be reached, or gave us nothing usable."""
 
+#read api key from api_key.txt file, which is gitignored and not in the repo.
+#also checks for lines starting with # or empty lines and ignores them. if theres = in the line it splits
+#the line into key and value and if the key is GEMINI_API it returns the value otherwise it returns an empty string.
 def read_api_key(path: Path = API_KEY_FILE, name: str = "GEMINI_API") -> str:
     """Read a KEY=value entry out of a local text file.
 
@@ -38,6 +44,10 @@ def read_api_key(path: Path = API_KEY_FILE, name: str = "GEMINI_API") -> str:
 
     return ""
 
+#ollama provider class, it talks to a local ollama server and has a complete method that initializes
+#the number of input max tokens to 8192 so that the entire programme can fit and temperature to 0 so that the model
+#doesn't hallucinate and gives the same answer every time. it also handles errors when the model cannot be reached
+#or returns nothing usable.
 class OllamaProvider:
     """Talks to a local Ollama server (no API key, nothing to pay for)."""
 
@@ -91,6 +101,10 @@ class OllamaProvider:
 
         return answer
 
+#same interface as OllamaProvider, but talks to Google's Gemini API on its free tier. it calls the read_api_key function
+#in order to read the api, it also handles the same errors as OllamaProvider but also handles the case where the api key
+#is missing and when the model is blocked by a safety filter.
+
 class GeminiProvider:
     """Talks to Google's Gemini API on its free tier.
 
@@ -105,16 +119,12 @@ class GeminiProvider:
     def complete(self, system_prompt: str, question: str) -> str:
         api_key = read_api_key()
         if not api_key:
-            # Caught here rather than letting Google answer with a raw 403 the
-            # person in the browser cannot act on.
             raise ModelError(
                 f"No Gemini API key. Put GEMINI_API=<your key> in "
                 f"{API_KEY_FILE.name}, or switch back to Ollama."
             )
 
         payload = {
-            # Gemini keeps the system prompt in its own field rather than as a
-            # message, but the content is identical to the Ollama version.
             "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"role": "user", "parts": [{"text": question}]}],
             "generationConfig": {"temperature": 0},
@@ -147,6 +157,8 @@ class GeminiProvider:
             # Happens when the answer is blocked by a safety filter.
             raise ModelError(f"Gemini returned no usable answer: {str(body)[:200]}")
 
+#it only exists when the server is started with --mock, and returns a fixed answer in the same format as the other
+#providers to show the UI working without a model installed. it also has a 1 second delay to show the "thinking...".
 class MockProvider:
     """A canned answer, so the UI can be demoed with no model installed.
 

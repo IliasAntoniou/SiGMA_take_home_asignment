@@ -36,23 +36,11 @@ PROVIDERS = {
 
 
 def build_system_prompt(data: dict = DATA) -> str:
-    """Render the whole programme, then the rules, into the system prompt.
-
-    The dataset is ~3,600 tokens, so all of it fits in one prompt and there is
-    nothing to retrieve. Each record becomes one compact line rather than raw
-    JSON: same information, roughly half the tokens, easier for the model to
-    scan - and the leading [S014]/[E001] gives it an id to cite.
-
-    Order matters. The data goes first and the instructions last, because
-    attention concentrates on the start and the end of a long prompt and the
-    middle is where things get missed ("lost in the middle"). The task is what
-    has to survive, so it sits at the end, right next to the question.
-
-    Sessions are grouped under day + morning/afternoon headings. That
-    comparison is exact in Python and a guess in a 7B model, and it turns "find
-    the Wednesday afternoon sessions" from filtering forty scattered lines into
-    reading the lines under one heading. The day then lives in the heading
-    instead of on every line, so there is less to copy and less to get wrong.
+    """Build the system prompt by first formatting the programme into a text block with compact lines that groups 
+    sessions by day and half day then adds the instructions for how to answer the questions. The instructions
+    inform the model on how to answer citing each record and how to handle cases without matches. Lastly the question
+    is framed in a way is repeated twice to ensure the model does not skip it and it's also being placed at the end
+    of the prompt to ensure it's the last thing the model reads before writing.
     """
     event = data["event"]
 
@@ -130,15 +118,10 @@ SYSTEM_PROMPT = build_system_prompt()
 
 
 def frame_question(question: str) -> str:
-    """Put the attendee's question in front of the model twice.
-
-    The programme is ~3,600 tokens and the question is about ten, so left as a
-    bare line it is the easiest thing in the prompt to skim past - which is
-    what under-filtered answers look like. Two cheap, well-supported fixes:
-    fence it so it reads as data to work on rather than more prose, and repeat
-    it verbatim underneath the instruction ("re-reading", which measurably
-    improves this kind of answer). The repeat also puts the question in the
-    last thing the model reads before it starts writing.
+    """Frames the question in order for the model to view it twice and also places it at the end of the prompt
+    to avoid "lost in the middle" issues and lastly it's framed in XML tags to ensure the model 
+    doesn't hallucinate and answer a different question than the one asked. The model is also instructed
+    to check every record against it and include all the matches.
     """
     return (
         "< QUESTION > \n"
@@ -150,17 +133,14 @@ def frame_question(question: str) -> str:
     )
 
 
-# What a citation looks like in an answer: [S014] or [E001].
+# create the pattern of how a citation looks like
 CITED_ID = re.compile(r"\[([SE]\d{3})\]")
 
 
 def extract_sources(answer: str) -> list:
-    """The records behind an answer, in the order it first cited them.
-
-    Every [S###]/[E###] in the answer is looked up in RECORDS. Real ids come
-    back as full records for the UI to render as source chips; an invented id
-    is dropped and logged, so a hallucinated citation can never reach the
-    user dressed up as a real one.
+    """Every S### or E### the model cited in its answer is a source, so search for them and return
+    the corresponding records from the dataset in order to send it back to the fronted to display them
+    as chips.
     """
     sources = []
     seen = set()
@@ -191,6 +171,9 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
+    #handles the POST request coming from the browser to /api/chat. it validates the body,
+    #picks which provider answers, calls it for the answer, and returns json with the answer
+    #plus the records it cited. all errors become a readable json message instead of a crash.
     def do_POST(self):
         if self.path != "/api/chat":
             self.send_error(404, "No such endpoint")
@@ -250,22 +233,20 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
 
 
 def main():
-    # --mock swaps both real models for the canned MockProvider, so the UI
-    # can be demoed on a machine with nothing installed. Only reachable from
-    # the command line - importing this module (as eval.py does) never mocks.
+    #If the server is ran with --mock the provider is changed to MockProvider which is used
+    #to show the UI working without needing a model.
     if "--mock" in sys.argv:
         for name in PROVIDERS:
             PROVIDERS[name] = MockProvider()
         print("Mock mode: answers are canned, no model is called.")
 
-    # On Windows, SO_REUSEADDR lets a second server bind an in-use port
-    # instead of failing, and the two then fight over requests. Bind
-    # exclusively there, so a second instance fails loudly instead.
+    #prevents 2 servers from binding into the same port
     if os.name == "nt":
         ThreadingHTTPServer.allow_reuse_address = False
 
     # Threading so a slow model answer does not block the browser from
     # fetching the page or the logo.
+
     try:
         server = ThreadingHTTPServer(("", PORT), ConciergeHandler)
     except OSError:
@@ -274,6 +255,7 @@ def main():
 
     print(f"SiGMA Event Concierge: http://localhost:{PORT}  (Ctrl+C to stop)")
 
+    #Server runs until it get's interrupted by the keyboard.
     try:
         server.serve_forever()
     except KeyboardInterrupt:

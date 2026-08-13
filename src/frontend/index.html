@@ -252,6 +252,7 @@
           I answer from the official programme only - 40 sessions and 20 exhibitors.
           If something isn't in it, I'll say so rather than guess. Try one of these:
         </p>
+        //buttons for example questions, they fill the input and submit the form when clicked.
         <button class="example" type="button">What AI-related talks are on Wednesday afternoon?</button>
         <button class="example" type="button">Who is speaking about regulation?</button>
         <button class="example" type="button">I'm a payments startup - which exhibitors should I visit?</button>
@@ -270,6 +271,7 @@
       </div>
 
       <input id="question" placeholder="Ask about a session, speaker or exhibitor..." autocomplete="off" />
+      //button that submits the form, disabled while waiting for the answer.
       <button id="send" type="submit">Send</button>
     </form>
   </div>
@@ -283,12 +285,11 @@
   var send = document.getElementById("send");
   var providers = document.getElementById("providers");
 
-  // Which model answers the next question, and its name for the bubble label.
+  //variables to control which model answers, and to label the bubble, default to Ollama.
   var provider = "ollama";
   var providerLabel = "Ollama";
 
-  // Adds one bubble to the chat and returns it, so we can edit it later.
-  // "who" is shown as a small label above the text (see .message::before).
+  //creates the bubbles used for both the user's questions and the model's answers.
   function addMessage(cssClass, who, text) {
     var div = document.createElement("div");
     div.className = "message " + cssClass;
@@ -299,9 +300,7 @@
     return div;
   }
 
-  // Renders the records the backend verified the answer cited as chips under
-  // the bubble. Everything is set via textContent, so nothing the model wrote
-  // is ever treated as HTML.
+  //creates the source chips under an answers for each record the backend verified.
   function addSources(bubble, sources) {
     if (!sources || !sources.length) return;
 
@@ -312,6 +311,8 @@
       var s = sources[i];
       var chip = document.createElement("span");
       chip.className = "source";
+
+      //chip content and tooltip creation based on whether the record is a session or an exhibitor.
 
       if (s.title) {   // session: [S014] Title · Wednesday 13:00 · Main Stage
         chip.textContent = "[" + s.id + "] " + s.title + " · " +
@@ -327,6 +328,8 @@
 
     bubble.appendChild(row);
   }
+
+  //what happens when the user submits a question.
 
   form.onsubmit = async function (event) {
     event.preventDefault();
@@ -350,16 +353,17 @@
     reply.classList.add("thinking");
     for (var d = 0; d < 3; d++) reply.appendChild(document.createElement("span"));
 
+    //send the question to theorchestrator, which forwards it to the chosen model. the backend returns a JSON object.
     try {
       var response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: question, provider: provider })
       });
-
+      //Parse the JSON response from the backend, which contains the answer and any sources.
       var data = await response.json();
 
-      // orchestrator.py sends {"error": "..."} when the model can't be reached.
+      //if the model cannot be reached the orchestrator sends an error message, which we display in a bubble.
       if (!response.ok) throw new Error(data.error || "Server returned " + response.status);
 
       reply.classList.remove("thinking");
@@ -376,7 +380,7 @@
     input.focus();
   };
 
-  // Clicking a header button switches which model answers.
+  //Clicking the model switch buttons changes the provider variable and updates the button styles to show which is selected.
   providers.onclick = function (event) {
     var clicked = event.target;
     if (!clicked.dataset.provider) return;
