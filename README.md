@@ -242,10 +242,10 @@ following actions:
 - **MCP servers** - I would create all the necessary tools to retrieve data from
   the database.
 - **Stronger model** - If possible I would add a stronger model hosted on a big
-  server, or use it through a paid API, to ensure accuracy and also avoid
+  server I have access to, or use it through a paid API, to ensure accuracy and also avoid
   hitting token limits.
 - **Better evaluation** - I would increase the number of tests and try to
-  replicate real uses, or even release it to other developers to test it
+  replicate real uses and loads, or even release it to other developers to test it
   themselves.
 - **Testing** - I would add testing scripts to check whether everything is
   working properly before running the application, and to allow easier
