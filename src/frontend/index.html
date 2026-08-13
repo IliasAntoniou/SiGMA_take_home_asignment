@@ -353,7 +353,7 @@
     reply.classList.add("thinking");
     for (var d = 0; d < 3; d++) reply.appendChild(document.createElement("span"));
 
-    //send the question to theorchestrator, which forwards it to the chosen model. the backend returns a JSON object.
+    //send the question to the orchestrator, which forwards it to the chosen model. the backend returns a JSON object.
     try {
       var response = await fetch("/api/chat", {
         method: "POST",
