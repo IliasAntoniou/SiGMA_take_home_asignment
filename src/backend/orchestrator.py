@@ -123,7 +123,6 @@ def build_system_prompt(data: dict = DATA) -> str:
         "failure.\n"
         "9. Plain text. No markdown tables, no preamble - open with the "
         "answer itself.\n"
-        
     )
 
 

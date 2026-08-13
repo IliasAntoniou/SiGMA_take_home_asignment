@@ -4,9 +4,7 @@ A small web app where an attendee can ask natural-language questions about
 **SiGMA Malta 2026** and get answers grounded in the provided programme
 (40 sessions, 20 exhibitors).
 
-Python standard library on the backend, one HTML file on the frontend, a local
-model through Ollama or Gemini's free tier. No paid APIs, no pip install, no
-build step.
+Stack : Python, HTML
 
 ---
 
@@ -48,17 +46,6 @@ The switch next to the question box chooses who answers the next question:
 3. Click **Gemini**. No restart needed - the key is read per request.
 
 `api_key.txt` is listed in `.gitignore`, so the key is never committed.
-
-Why offer both: the local model costs nothing and needs no account, but it is
-slow and it is the source of the accuracy ceiling described under
-[Known limitations](#known-limitations). Having both behind one interface turns
-"is this prompt wrong, or is this model too small?" into a question you can
-answer by clicking a button - and on the hardest test question it turned out to
-be the model.
-
-The model name is `gemini-flash-latest`, an alias rather than a pinned version:
-Google retires specific names (`gemini-2.5-flash` already 404s for new keys)
-and the alias keeps following the current free-tier Flash model.
 
 ### Running without any model (mock mode)
 
@@ -127,141 +114,58 @@ because nothing else knows an LLM exists.
 
 ### 1. Full-context stuffing - the whole programme in every prompt
 
-The rendered programme is ~3,800 tokens and the context window is set to
-8,192, so all of it fits with room to spare for the answer. There is nothing
-to retrieve.
+In order to fit the whole programme into the prompt the max tokens of the model were increased to 8192.
 
-The deeper reason is the shape of the questions. "What AI talks are on
-Wednesday afternoon?" is *filter-and-aggregate*: the correct answer is
-**every** match, and an answer missing one looks exactly like a complete one
-to the attendee. Top-k retrieval silently drops the k+1th match - a worse
-failure than the hallucination it is meant to prevent, because nobody can see
-it happen. Stuffing has no cutoff: the model always sees every record, so a
-missed session is a *reading* failure by the model - visible, measurable, and
-measured below - never a *delivery* failure by the pipeline.
+Pros:
 
-I also skipped tool/function calling. It reaches the same grounded place, but
-costs two model round trips per question, which on a local CPU model means
-doubling a 10-60 second wait. Stuffing gets there in one call.
+The dataset is small enough to fit in the whole prompt so adding a tool server for retrieval would only increase latency
+since the model would have to be called twice, once for the initial question and another one after the tool call.
+It also makes the whole system simpler and easier to debug. There's also a study that shows (Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach) that full context stuffing can match or even outperform RAG in scenarios where the context fits into the whole prompt. RAG is mainly used for efficiency when the data are massive.
 
-The honest cost: this design stops working when the dataset outgrows the
-window. At a real summit with hundreds of sessions, retrieval earns its place -
-that is in [What I would do next](#what-i-would-do-next), to be added when it
-is needed and not before.
+Cons: 
+There's a big problem in scalability, in real life scenarios we won't have to deal with just 1 event, it will probably be massive data that are unable to fit in one prompt.
 
-### 2. The prompt is pre-computed structure, not raw JSON
+
+### 2. Prompt Engineering
 
 Two deliberate transformations in `build_system_prompt()`:
 
-**Compact lines instead of JSON.** Each record becomes one line:
+Entries are modified from JSON to compact lines in order to consume less tokens:
 
+Entry example:
 ```
 [S014] 13:00-13:45 | Room: Main Stage | Title: Agentic AI: When Chatbots Start Taking Actions | Track: AI & Emerging Tech | Speakers: ...
 ```
+They also get grouped by Day and Half day meaning morning(T < 12:00) or afternoon (T >= 12:00) in order to make it easier for the model to answer questions that include time or specific days.
 
-Same information as the raw JSON in roughly half the tokens, and easier for
-the model to scan. Every field keeps its label - "Room:" binds the value to
-its field, which discourages the model from sliding a room or a time in from
-the neighbouring line. The leading `[S014]` gives it an id to cite.
+Since i've built an evalutation test it was a good opportunity to test different changes in my prompt to check if 
+they actually made any difference. Changing the brackets of the question part in the prompt from === "question"===
+to </"question"> increased precision from 0.84 to 0.90 since anthropic suggest's that models recognise </> better 
+cause of the data they've been trained on. It is not anthropic's model and the test is pretty small but it's for sure 
+better than blindly guessing.
 
-**Grouped by day and half-day.** Sessions sit under
-`--- Wednesday 2026-11-11 - afternoon ---` headings, computed in Python with a
-plain string compare on the zero-padded start time. This is the single change
-that most improved accuracy: asked to filter 40 scattered lines by day *and*
-time-of-day, the 7B model returned morning sessions and wrong-day sessions.
-Given headings, the same question becomes "copy the lines under this heading" -
-a lookup it does far more reliably. **The morning/afternoon comparison happens
-in Python, where it is exact, instead of in the model, where it is a guess.**
+Question is also being added at the start and the end of the prompt to avoid lost in the middle scenarios where models 
+struggle to work with data in the middle of the prompt.
 
-### 3. Data first, instructions last - and the question twice
+There's also a clean set of rules the model has to follow in order to narrow the potential of it's answers.
 
-The prompt is ordered data → rules → question, because attention concentrates
-on the start and end of a long prompt and the middle is where things get
-missed ("lost in the middle"). The rules are what has to survive, so they sit
-at the end, right next to the question.
+Lastly both models temperature is set to 0.0 to make the answers deterministic and prevent the models from being creative and inventing their own text.
 
-The question itself is ~10 tokens next to ~3,800 of programme - the easiest
-thing in the prompt to skim past. So it is fenced (`=== THE QUESTION ===`) to
-read as data rather than prose, and repeated verbatim after the instructions
-("re-reading", which measurably improves this kind of answer). The laste thing
-the model reads before writing is the question.
 
-### 4. Grounding is prompt rules plus ids
+### 3. Grounding/Accuracy
 
-The system prompt forbids inventing records, requires the `[S014]`/`[E001]` id
-of anything mentioned, and instructs the model to say plainly when the
-programme doesn't cover a question and offer the closest thing that is in it.
-Answers open with a `Matches: [S014] [S015] ...` line - collecting every id
-before describing any of them is how the model avoids dropping matches, and
-the attendee sees at a glance how many there are. `temperature: 0` on both
-providers keeps answers deterministic and copied rather than invented.
-
-Citing ids also makes wrong answers *checkable* - you can look up `[S014]` and
-see immediately whether it says what the model claimed.
-
-### 5. `num_ctx` is set explicitly
-
-Ollama defaults to a 2048-token context window, which would silently truncate
-a ~3,800-token programme - the model would answer from half the data with no
-error anywhere. `model_provider.py` sets `num_ctx: 8192`.
-
-### 6. Two worked examples close the prompt
-
-The system prompt ends with two example question/answer pairs, hand-checked
-against the dataset. They pin the output format (the `Matches:` line, then
-one copied line per record), and both deliberately include a match with no
-topic word in its title - `[S033]` "CTOs Off the Record", `[S040]` "Closing
-Party Briefing" - so they teach the topic-means-track rule, the one small
-models drop first.
-
-Measured effect on qwen2.5:7b (see the eval): precision 0.83 → 0.87, with
-the wrong-match extras largely gone, recall flat. Two honest caveats: the
-first example doubles as eval question 1, so that case no longer measures
-cold performance - though the model still returns only two of the four ids
-*with the worked answer in the prompt*, which locates the ceiling precisely -
-and an example id can occasionally bleed into an unrelated answer, which id
-validation cannot catch because the id is real, just wrong.
-
-### 7. The prompt is built once, at startup
-
-The system prompt does not depend on the question, so it is rendered once at
-import and reused for every request. Ollama caches the KV state of a
-byte-identical prompt prefix, so after the first question the model only has
-to process the few new tokens of the next question, not the whole programme
-again. Per-request work is just framing the question.
-
----
+The system is instructed to never invent entries which probably improves hallucination resistance, but also each answer 
+is being verified since the prompt forces the model to first indicate the matches with their id's and if the id of the 
+question exists under the answer bubble in the UI i'm including a citation of the answer with the info used in order to 
+check the authenticity of the answer. The model can still hallucinate but atleast you can verify the answers in real time.
 
 ## Stretch goals
 
 The brief allows at most two.
 
-- **Citations** - every answer opens with a `Matches:` line and cites the
-  `[S014]`-style id of each record it mentions. The backend then validates
-  every cited id against the dataset and returns the matching records, which
-  the UI renders as source chips under the answer: title, day, time and room
-  at a glance, the abstract on hover. An id that is not in the dataset is
-  dropped and logged instead of shown - so a hallucinated citation is caught
-  automatically rather than reaching the user dressed up as a real one.
-- **Mini eval** - ten questions with known-correct id sets, answered through
-  the app's real prompt and scored on the ids each answer claims on its
-  `Matches:` line:
+- **Citations** - As mentioned earlier one of the stretch goals i've chosen is citations since it's also helping in verifying that the data are grounded in real data rather than being hallucinated.
 
-  ```bash
-  python src/backend/eval.py           # ollama (the default)
-  python src/backend/eval.py gemini
-  ```
-
-  Reported per provider: exact matches, precision (of the ids it claimed,
-  how many are right), recall (of the right ids, how many it claimed) and
-  groundedness (does every cited id exist in the dataset at all).
-  Groundedness is the hard invariant - the script exits non-zero if an
-  answer ever cites an id that is not in the dataset. The expected sets in
-  [`eval_questions.json`](src/backend/data/eval_questions.json) are
-  deterministic filters over the dataset (a track, a day, a speaker, a
-  stand), noted per question, so the ground truth can be re-derived and
-  checked by hand. Measured results are under
-  [Known limitations](#known-limitations).
+-**Mini eval** - Mini evaluation was also picked cause a system is basically gambling if you have nothing to evaluate it against and you're just guessing. It also helped me improve the prompt of the system.
 
 ---
 
@@ -270,87 +174,34 @@ The brief allows at most two.
 - **Empty state** - before the first question, the page explains what the
   assistant knows and offers four example questions as clickable buttons
   (the same four from the brief).
+
 - **Loading** - a "Thinking" bubble with three pulsing dots appears
-  immediately and is replaced by the answer in place (the dots hold steady
-  under `prefers-reduced-motion`). Send is disabled meanwhile, so no double
-  submits. This matters: a 7B model on CPU takes 10-60 seconds.
-- **Errors** - the backend returns `{"error": "..."}` with a message written
-  for the person in the browser ("Could not reach Ollama... Is Ollama
-  running?"), which the UI shows in a red bubble. The input re-enables, so a
-  failure never locks the app. The bubble is labelled with the model that was
-  selected when the question was *sent*, so flipping the switch mid-wait
-  cannot mislabel an answer.
+  immediately and is replaced by the answer in place in order to be sure that the system is not stuck.
+
+- **Errors** - Every error is being shown in the UI as a red bubble in order to be seen clearly and it also doesn't break the application you can still use it even after an error.
 
 ---
 
 ## Known limitations
 
-**The 7B model under-reports and cross-contaminates, even with everything in
-context.** This is the main limitation, and it is model capability rather than
-data plumbing. On "What AI-related talks are on Wednesday afternoon?" (truth:
-S014, S015, S033, S036 - all four are in the prompt, under one heading):
-
-| | Wednesday-afternoon AI talks (truth: S014, S015, S033, S036) |
-|---|---|
-| qwen2.5:7b-instruct | S014, S036 - dropped two, **and** copied S036's room onto S014 |
-| gemini-flash-latest | all four, every time and room correct |
-
-The room error is the exact cross-line contamination the prompt's "copy, don't
-retype" rule targets - evidence that prompt rules narrow this failure but
-cannot close it at 7B. At `temperature: 0` the result is reproducible.
-**Use the Gemini switch for accuracy; the local model is the zero-setup
-option.**
-
-Measured with the mini eval (ten questions with expected id sets, see
-[Stretch goals](#stretch-goals)):
+The main limitation of the local llama model is that it's very small and it's not very capable which is clearly shown in the mini evalutation, it does score a high precision but most of the answers were missing entries making the answer accurate but incomplete, hence the lower recall. The free version of Gemini on the other hand scores perfectly.
 
 | | exact | mean precision | mean recall | hallucinated ids |
 |---|---|---|---|---|
 | qwen2.5:7b-instruct | 3/10 | 0.90 | 0.64 | 0 |
 | gemini-flash-latest | 10/10| 1.00 | 1.00 | 0 |
 
-*Gemini's free-tier daily quota ran out mid-eval; the three questions it did
-answer - including the two hardest aggregates, with 7 and 4 expected ids -
-were all exact. Rerun `python src/backend/eval.py gemini` on a fresh quota
-for the full row.
-
-The recall of 0.62 is the under-reporting made visible: on "Who is speaking
-about regulation?" the local model found three of the seven regulation-track
-sessions. Precision 0.87 with zero hallucinated ids means what it does return
-is real and nearly always right - the failure mode is missing sessions (and
-the odd wrong match), not inventing them.
-
-Either way, **it does not invent sessions, speakers or exhibitors** - every id
-returned in testing was real, across every eval run and both models. For an
-attendee this fails safe: they may miss a session, they will not turn up to
-one that doesn't exist.
-
-Others, smaller:
-
-- **The whole programme rides in every prompt.** Fine at 40 sessions; a
-  dataset ten times larger would need the retrieval this design deliberately
-  skipped.
-- **No conversation memory.** Each question is independent, so "and what about
-  Thursday?" won't work.
-- **No streaming**, so a slow answer looks like a long pause behind the
-  thinking dots.
-- **No retry button.** A failed request (including a Gemini free-tier 429) is
-  retried by asking again.
-- **Gemini's free tier is genuinely small.** A handful of requests per minute
-  and a daily cap. The eval paces itself (15s between questions, one 60s
-  retry on a 429), but a day of heavy testing can still exhaust the daily
-  quota - at which point the app's error bubble and the eval's ERROR rows
-  say so rather than hanging.
+- **The whole programme rides in every prompt.** As mentioned before this one creates scalability issues.
+- **No conversation memory.** There's no memory so the model answers each question independently and doesn't keep context.
+- **No streaming** Small limitation but it makes it harder to know when the model is stuck (the three dots moving is not enough)
+- **No retry button.** You have to manually retype every question in case of an error.
+- **Gemini's free tier is genuinely small.** The free tier of Gemini doesn't allow many questions so you hit the limit pretty quick.
 
 ---
 
 ## What I would do next
 
-In the order I would actually do it:
-
-1. **Streaming**, so long answers feel responsive.
-2. **Retrieval** - only once the dataset outgrows the context window, per
-   design decision 1.
-3. **Make Gemini the default** if an API key is acceptable in production. The
-   comparison above shows the remaining accuracy gap is model capability, not
-   prompt design, and the provider interface makes it a one-line change.
+**DataBase** It's impossible to have massive data without a database so in a real application that's the first thing i would add. Ideally a database that can also handle concurency since it's an application used by many users.
+**API** Mainly to use the API calls through MCP tools and prevent the model to have instant access to the database.
+**MCP Servers** I would create all the necessary tools to retrieve data from the database.
+**Stronger Model** If possible i would add a stronger model hosted on a big server or use it through a Paid API to ensure accuracy and also avoid hitting token limits.
