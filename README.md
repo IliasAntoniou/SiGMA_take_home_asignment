@@ -2,10 +2,6 @@
 
 ***NOTE***: Instructions and Architecture were AI generated but verified frome me, The technical decision part which is the most important was entirely written by me with minor fixes in styling and phrasing using AI.
 
-## Demo
-
-[SigmaProjectDemo.mp4](SigmaProjectDemo.mp4) - a short screen recording of the app answering questions.
-
 A small web app where an attendee can ask natural-language questions about
 **SiGMA Malta 2026** and get answers grounded in the provided programme
 (40 sessions, 20 exhibitors).
