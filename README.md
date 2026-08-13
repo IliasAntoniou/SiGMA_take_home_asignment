@@ -4,7 +4,7 @@ A small web app where an attendee can ask natural-language questions about
 **SiGMA Malta 2026** and get answers grounded in the provided programme
 (40 sessions, 20 exhibitors).
 
-Stack : Python, HTML
+Stack: Python, HTML
 
 ---
 
@@ -89,83 +89,92 @@ qwen2.5:7b-instruct         gemini-flash-latest
 | `src/backend/api_key.txt` | Your Gemini key. Gitignored, so it is never committed. |
 | [`src/backend/data/sigma_agenda.json`](src/backend/data/sigma_agenda.json) | The provided dataset, unmodified. |
 
-`orchestrator.py` is the only file that knows about HTTP; `model_provider.py`
-is the only file that knows about LLMs.
-
-**Swapping the model provider.** Every provider exposes one method:
-
-```python
-complete(system_prompt: str, question: str) -> str
-```
-
-`OllamaProvider`, `GeminiProvider` and `MockProvider` all implement it, and
-`orchestrator.py` holds the live ones in a dict keyed by name. The UI sends
-`{"question": ..., "provider": "gemini"}`, so switching model happens per
-question with no restart; `--mock` swaps both entries for `MockProvider` at
-startup.
-
-Adding another backend means writing a fourth class with that one method and
-adding one line to the `PROVIDERS` dict - nothing else in the codebase changes,
-because nothing else knows an LLM exists.
-
 ---
 
 ## AI design decisions
 
-### 1. Full-context stuffing - the whole programme in every prompt
+### 1. Prompt engineering
 
-In order to fit the whole programme into the prompt the max tokens of the model were increased to 8192.
+**Full context stuffing**
 
-Pros:
+In order to fit the whole programme into the prompt, the context window of the
+model was increased to 8192.
 
-The dataset is small enough to fit in the whole prompt so adding a tool server for retrieval would only increase latency
-since the model would have to be called twice, once for the initial question and another one after the tool call.
-It also makes the whole system simpler and easier to debug. There's also a study that shows (Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach) that full context stuffing can match or even outperform RAG in scenarios where the context fits into the whole prompt. RAG is mainly used for efficiency when the data are massive.
+**Pros:**
 
-Cons: 
-There's a big problem in scalability, in real life scenarios we won't have to deal with just 1 event, it will probably be massive data that are unable to fit in one prompt.
+The dataset is small enough to fit in the whole prompt, so adding a tool server
+for retrieval would only increase latency, since the model would have to be
+called twice: once for the initial question and again after the tool call. It
+also makes the whole system simpler and easier to debug. There is also a study
+(*Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and
+Hybrid Approach*) showing that full context stuffing can match or even
+outperform RAG in scenarios where the context fits into the whole prompt. RAG is
+mainly used for efficiency when the data is massive.
 
+**Cons:**
 
-### 2. Prompt Engineering
+There is a big problem with scalability. In real-life scenarios we will not be
+dealing with just one event; it will probably be massive data that cannot fit in
+one prompt.
 
-Two deliberate transformations in `build_system_prompt()`:
+**Two deliberate transformations in `build_system_prompt()`**
 
-Entries are modified from JSON to compact lines in order to consume less tokens:
+Entries are converted from JSON to compact lines in order to consume fewer
+tokens:
 
-Entry example:
 ```
 [S014] 13:00-13:45 | Room: Main Stage | Title: Agentic AI: When Chatbots Start Taking Actions | Track: AI & Emerging Tech | Speakers: ...
 ```
-They also get grouped by Day and Half day meaning morning(T < 12:00) or afternoon (T >= 12:00) in order to make it easier for the model to answer questions that include time or specific days.
 
-Since i've built an evalutation test it was a good opportunity to test different changes in my prompt to check if 
-they actually made any difference. Changing the brackets of the question part in the prompt from === "question"===
-to </"question"> increased precision from 0.84 to 0.90 since anthropic suggest's that models recognise </> better 
-cause of the data they've been trained on. It is not anthropic's model and the test is pretty small but it's for sure 
-better than blindly guessing.
+They also get grouped by day and half-day, meaning morning (T < 12:00) or
+afternoon (T >= 12:00), in order to make it easier for the model to answer
+questions that include times or specific days.
 
-Question is also being added at the start and the end of the prompt to avoid lost in the middle scenarios where models 
-struggle to work with data in the middle of the prompt.
+**Testing prompt changes**
 
-There's also a clean set of rules the model has to follow in order to narrow the potential of it's answers.
+Since I had built an evaluation test, it was a good opportunity to test
+different changes to my prompt and check whether they actually made any
+difference. Changing the brackets of the question part of the prompt from
+`=== "question" ===` to `</"question">` increased precision from 0.84 to 0.90,
+since Anthropic suggests that models recognise `</>` better because of the data
+they have been trained on. It is not Anthropic's model and the test is pretty
+small, but it is certainly better than blindly guessing.
 
-Lastly both models temperature is set to 0.0 to make the answers deterministic and prevent the models from being creative and inventing their own text.
+The question is also added at the start and the end of the prompt to avoid
+"lost in the middle" scenarios, where models struggle to work with data in the
+middle of the prompt.
 
+There is also a clear set of rules the model has to follow in order to narrow
+down the potential of its answers.
 
-### 3. Grounding/Accuracy
+Lastly, both models' temperature is set to 0.0 to make the answers
+deterministic and to prevent the models from being creative and inventing their
+own text.
 
-The system is instructed to never invent entries which probably improves hallucination resistance, but also each answer 
-is being verified since the prompt forces the model to first indicate the matches with their id's and if the id of the 
-question exists under the answer bubble in the UI i'm including a citation of the answer with the info used in order to 
-check the authenticity of the answer. The model can still hallucinate but atleast you can verify the answers in real time.
+### 2. Grounding / accuracy
+
+The system is instructed never to invent entries, which probably improves
+hallucination resistance. On top of that, each answer is verified: the prompt
+forces the model to first indicate the matches with their ids, and if the id
+exists, I include a citation under the answer bubble in the UI with the
+information used, so the authenticity of the answer can be checked. The model
+can still hallucinate, but at least you can verify the answers in real time.
+
+---
 
 ## Stretch goals
 
 The brief allows at most two.
 
-- **Citations** - As mentioned earlier one of the stretch goals i've chosen is citations since it's also helping in verifying that the data are grounded in real data rather than being hallucinated.
+- **Citations** - As mentioned earlier, one of the stretch goals I chose is
+  citations, since it also helps verify that the answers are grounded in real
+  data rather than hallucinated.
 
--**Mini eval** - Mini evaluation was also picked cause a system is basically gambling if you have nothing to evaluate it against and you're just guessing. It also helped me improve the prompt of the system.
+- **Mini eval** - Mini evaluation was also picked because a system is basically
+  a gamble if you have nothing to evaluate it against and you are just guessing.
+  It also helped me improve the prompt of the system. I tested whether adding
+  examples helps the model, but small models tend to use examples to answer
+  rather than treat them as pure examples, so precision got worse with qwen.
 
 ---
 
@@ -176,32 +185,62 @@ The brief allows at most two.
   (the same four from the brief).
 
 - **Loading** - a "Thinking" bubble with three pulsing dots appears
-  immediately and is replaced by the answer in place in order to be sure that the system is not stuck.
+  immediately and is replaced by the answer in place, so it is clear that the
+  system is not stuck.
 
-- **Errors** - Every error is being shown in the UI as a red bubble in order to be seen clearly and it also doesn't break the application you can still use it even after an error.
+- **Errors** - every error is shown in the UI as a red bubble so it is seen
+  clearly. It also does not break the application: you can still use it after
+  an error.
 
 ---
 
 ## Known limitations
 
-The main limitation of the local llama model is that it's very small and it's not very capable which is clearly shown in the mini evalutation, it does score a high precision but most of the answers were missing entries making the answer accurate but incomplete, hence the lower recall. The free version of Gemini on the other hand scores perfectly.
+The main limitation of the local qwen model is that it is very small and not
+very capable, which is clearly shown in the mini evaluation. It does score a
+high precision, but most of the answers were missing entries, making the answer
+accurate but incomplete, hence the lower recall. The free version of Gemini, on
+the other hand, scores perfectly.
 
 | | exact | mean precision | mean recall | hallucinated ids |
 |---|---|---|---|---|
 | qwen2.5:7b-instruct | 3/10 | 0.90 | 0.64 | 0 |
-| gemini-flash-latest | 10/10| 1.00 | 1.00 | 0 |
+| gemini-flash-latest | 10/10 | 1.00 | 1.00 | 0 |
 
-- **The whole programme rides in every prompt.** As mentioned before this one creates scalability issues.
-- **No conversation memory.** There's no memory so the model answers each question independently and doesn't keep context.
-- **No streaming** Small limitation but it makes it harder to know when the model is stuck (the three dots moving is not enough)
-- **No retry button.** You have to manually retype every question in case of an error.
-- **Gemini's free tier is genuinely small.** The free tier of Gemini doesn't allow many questions so you hit the limit pretty quick.
+Other limitations:
+
+- **The whole programme rides in every prompt.** As mentioned before, this
+  creates scalability issues.
+- **No conversation memory.** The model answers each question independently and
+  does not keep context.
+- **No streaming.** A small limitation, but it makes it harder to know when the
+  model is stuck (the three moving dots are not enough).
+- **No retry button.** You have to manually retype every question in case of an
+  error.
+- **Gemini's free tier is genuinely small.** The free tier does not allow many
+  questions, so you hit the limit pretty quickly.
 
 ---
 
 ## What I would do next
 
-**DataBase** It's impossible to have massive data without a database so in a real application that's the first thing i would add. Ideally a database that can also handle concurency since it's an application used by many users.
-**API** Mainly to use the API calls through MCP tools and prevent the model to have instant access to the database.
-**MCP Servers** I would create all the necessary tools to retrieve data from the database.
-**Stronger Model** If possible i would add a stronger model hosted on a big server or use it through a Paid API to ensure accuracy and also avoid hitting token limits.
+Mainly try to make it production ready rather than just an example, through the
+following actions:
+
+- **Database** - It is impossible to have massive data without a database, so in
+  a real application that is the first thing I would add. Ideally a database
+  that can also handle concurrency, since it is an application used by many
+  users.
+- **API** - Mainly to use the API calls through MCP tools and prevent the model
+  from having direct access to the database.
+- **MCP servers** - I would create all the necessary tools to retrieve data from
+  the database.
+- **Stronger model** - If possible I would add a stronger model hosted on a big
+  server, or use it through a paid API, to ensure accuracy and also avoid
+  hitting token limits.
+- **Better evaluation** - I would increase the number of tests and try to
+  replicate real uses, or even release it to other developers to test it
+  themselves.
+- **Testing** - I would add testing scripts to check whether everything is
+  working properly before running the application, and to allow easier
+  debugging.
