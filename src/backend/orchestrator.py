@@ -122,7 +122,8 @@ def build_system_prompt(data: dict = DATA) -> str:
         "thing that is in the programme. That is a good answer, not a "
         "failure.\n"
         "9. Plain text. No markdown tables, no preamble - open with the "
-        "answer itself."
+        "answer itself.\n"
+        
     )
 
 
@@ -141,9 +142,9 @@ def frame_question(question: str) -> str:
     last thing the model reads before it starts writing.
     """
     return (
-        "=== THE QUESTION ===\n"
+        "< QUESTION > \n"
         f"{question}\n"
-        "=== END OF QUESTION ===\n\n"
+        "</ QUESTION >\n\n"
         "Answer that question, and only that question, from the programme.\n"
         "Check every record against it and include all the matches.\n\n"
         f"The question again, so you have it exactly: {question}"

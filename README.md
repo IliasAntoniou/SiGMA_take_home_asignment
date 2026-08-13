@@ -183,7 +183,7 @@ at the end, right next to the question.
 The question itself is ~10 tokens next to ~3,800 of programme - the easiest
 thing in the prompt to skim past. So it is fenced (`=== THE QUESTION ===`) to
 read as data rather than prose, and repeated verbatim after the instructions
-("re-reading", which measurably improves this kind of answer). The last thing
+("re-reading", which measurably improves this kind of answer). The laste thing
 the model reads before writing is the question.
 
 ### 4. Grounding is prompt rules plus ids
@@ -205,7 +205,24 @@ Ollama defaults to a 2048-token context window, which would silently truncate
 a ~3,800-token programme - the model would answer from half the data with no
 error anywhere. `model_provider.py` sets `num_ctx: 8192`.
 
-### 6. The prompt is built once, at startup
+### 6. Two worked examples close the prompt
+
+The system prompt ends with two example question/answer pairs, hand-checked
+against the dataset. They pin the output format (the `Matches:` line, then
+one copied line per record), and both deliberately include a match with no
+topic word in its title - `[S033]` "CTOs Off the Record", `[S040]` "Closing
+Party Briefing" - so they teach the topic-means-track rule, the one small
+models drop first.
+
+Measured effect on qwen2.5:7b (see the eval): precision 0.83 → 0.87, with
+the wrong-match extras largely gone, recall flat. Two honest caveats: the
+first example doubles as eval question 1, so that case no longer measures
+cold performance - though the model still returns only two of the four ids
+*with the worked answer in the prompt*, which locates the ceiling precisely -
+and an example id can occasionally bleed into an unrelated answer, which id
+validation cannot catch because the id is real, just wrong.
+
+### 7. The prompt is built once, at startup
 
 The system prompt does not depend on the question, so it is rendered once at
 import and reused for every request. Ollama caches the KV state of a
@@ -289,18 +306,19 @@ Measured with the mini eval (ten questions with expected id sets, see
 
 | | exact | mean precision | mean recall | hallucinated ids |
 |---|---|---|---|---|
-| qwen2.5:7b-instruct | 3/10 | 0.83 | 0.61 | 0 |
-| gemini-flash-latest | 3/3 answered* | 1.00 | 1.00 | 0 |
+| qwen2.5:7b-instruct | 3/10 | 0.90 | 0.64 | 0 |
+| gemini-flash-latest | 10/10| 1.00 | 1.00 | 0 |
 
 *Gemini's free-tier daily quota ran out mid-eval; the three questions it did
 answer - including the two hardest aggregates, with 7 and 4 expected ids -
 were all exact. Rerun `python src/backend/eval.py gemini` on a fresh quota
 for the full row.
 
-The recall of 0.61 is the under-reporting made visible: on "Who is speaking
-about regulation?" the local model found one of the seven regulation-track
-sessions. Precision 0.83 with zero hallucinated ids means what it does return
-is real - the failure mode is missing sessions, not inventing them.
+The recall of 0.62 is the under-reporting made visible: on "Who is speaking
+about regulation?" the local model found three of the seven regulation-track
+sessions. Precision 0.87 with zero hallucinated ids means what it does return
+is real and nearly always right - the failure mode is missing sessions (and
+the odd wrong match), not inventing them.
 
 Either way, **it does not invent sessions, speakers or exhibitors** - every id
 returned in testing was real, across every eval run and both models. For an
