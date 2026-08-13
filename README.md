@@ -1,5 +1,7 @@
 # SiGMA Event Concierge
 
+***NOTE***: Instructions and Architecture were AI generated but verified frome me, The technical decision part which is the most important was entirely written by me with minor fixes in styling and phrasing using AI.
+
 A small web app where an attendee can ask natural-language questions about
 **SiGMA Malta 2026** and get answers grounded in the provided programme
 (40 sessions, 20 exhibitors).
@@ -174,7 +176,7 @@ The brief allows at most two.
   a gamble if you have nothing to evaluate it against and you are just guessing.
   It also helped me improve the prompt of the system. I tested whether adding
   examples helps the model, but small models tend to use examples to answer
-  rather than treat them as pure examples, so precision got worse with qwen.
+  rather than treat them as pure examples, so precision got worse with qwen(Ollama).
 
 ---
 
@@ -196,7 +198,7 @@ The brief allows at most two.
 
 ## Known limitations
 
-The main limitation of the local qwen model is that it is very small and not
+The main limitation lies in the local qwen(Ollama) model cause it's very small and not
 very capable, which is clearly shown in the mini evaluation. It does score a
 high precision, but most of the answers were missing entries, making the answer
 accurate but incomplete, hence the lower recall. The free version of Gemini, on

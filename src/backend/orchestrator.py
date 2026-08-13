@@ -122,7 +122,7 @@ def build_system_prompt(data: dict = DATA) -> str:
         "thing that is in the programme. That is a good answer, not a "
         "failure.\n"
         "9. Plain text. No markdown tables, no preamble - open with the "
-        "answer itself.\n"
+        "answer itself."
     )
 
 
