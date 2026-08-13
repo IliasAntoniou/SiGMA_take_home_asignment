@@ -204,7 +204,9 @@ The main limitation lies in the local qwen(Ollama) model cause it's very small a
 very capable, which is clearly shown in the mini evaluation. It does score a
 high precision, but most of the answers were missing entries, making the answer
 accurate but incomplete, hence the lower recall. The free version of Gemini, on
-the other hand, scores perfectly.
+the other hand, scores perfectly. The precision drops to 0.85 if you ask certain 
+questions using the application first, it's probably the KV cache used in the model
+having impact on the answer it provides for Q10, but first run is always 0.90.
 
 | | exact | mean precision | mean recall | hallucinated ids |
 |---|---|---|---|---|
