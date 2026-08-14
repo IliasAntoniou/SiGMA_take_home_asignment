@@ -119,7 +119,8 @@ mainly used for efficiency when the data is massive.
 
 There is a big problem with scalability. In real-life scenarios we will not be
 dealing with just one event, it will probably be massive data that cannot fit in
-one prompt.
+one prompt. It also costs more tokens per LLM call since all the data are being used in the initial
+prompt regardless of the question.
 
 **Two deliberate transformations in `build_system_prompt()`**
 
