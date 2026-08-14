@@ -159,6 +159,41 @@ def extract_sources(answer: str) -> list:
     return sources
 
 
+# any HH:MM on an answer line; used to catch times invented or carried over
+STATED_TIME = re.compile(r"\b\d{2}:\d{2}\b")
+
+
+def check_cited_facts(answer: str) -> list:
+    """Rule 7 tells the model to copy times and rooms character for character;
+    this checks that it actually did. Each '[S###] ...' line is compared with
+    the record it cites: a session line may only use that record's own times
+    and its own room, and an exhibitor line must not carry a time at all.
+    Returns one warning string per mismatch - empty means every copied fact
+    checks out.
+    """
+    warnings = []
+    for line in answer.splitlines():
+        cited = CITED_ID.match(line.strip())
+        record = RECORDS.get(cited.group(1)) if cited else None
+        if record is None:
+            continue  # not a record line, or an unknown id (logged elsewhere)
+        times = set(STATED_TIME.findall(line))
+        if "start" in record:  # a session
+            if not times <= {record["start"], record["end"]}:
+                warnings.append(
+                    f"{record['id']}: answer says {'/'.join(sorted(times))}, "
+                    f"programme says {record['start']}-{record['end']}"
+                )
+            if "Room:" in line and record["room"] not in line:
+                warnings.append(
+                    f"{record['id']}: answer puts it in the wrong room "
+                    f"(programme says {record['room']})"
+                )
+        elif times:  # an exhibitor was given a time - exactly what rule 7 bans
+            warnings.append(f"{record['id']}: an exhibitor was given a time")
+    return warnings
+
+
 class ConciergeHandler(SimpleHTTPRequestHandler):
     """Static files for every GET, plus the one dynamic route: /api/chat."""
 
@@ -224,7 +259,20 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
             return
 
         print(f"[{name}] < {answer}", flush=True)
-        self.send_json(200, {"answer": answer, "sources": extract_sources(answer)})
+
+        # rule 7 compliance, logged right under the answer it concerns
+        for warning in check_cited_facts(answer):
+            print(f"[check] ! {warning}", flush=True)
+
+        # ids the answer cites that are not in the dataset: sent to the UI so
+        # they show as a warning instead of a silently missing source chip
+        unknown = sorted({c for c in CITED_ID.findall(answer) if c not in RECORDS})
+
+        self.send_json(200, {
+            "answer": answer,
+            "sources": extract_sources(answer),
+            "unverified": unknown,
+        })
 
     def send_json(self, status: int, payload: dict):
         body = json.dumps(payload).encode("utf-8")

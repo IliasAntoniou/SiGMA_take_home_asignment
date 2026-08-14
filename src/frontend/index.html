@@ -369,6 +369,15 @@
       reply.classList.remove("thinking");
       reply.textContent = data.answer;
       addSources(reply, data.sources);
+
+      //ids the model cited that are not in the dataset - shown as a warning
+      //instead of being silently dropped, so a made-up id is always visible.
+      if (data.unverified && data.unverified.length) {
+        var warn = document.createElement("div");
+        warn.className = "sources";
+        warn.textContent = "⚠ Not in the programme: " + data.unverified.join(", ");
+        reply.appendChild(warn);
+      }
     } catch (error) {
       reply.className = "message error";
       reply.dataset.who = "⚠ " + answeredBy + " failed";

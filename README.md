@@ -164,6 +164,13 @@ exists, I include a citation under the answer bubble in the UI with the
 information used, so the authenticity of the answer can be checked. The model
 can still hallucinate, but at least you can verify the answers in real time.
 
+On top of the id check, every answer line is compared with the record it
+cites: a session line may only use that record's own time and room, and an
+exhibitor line must carry no time at all (rule 7, verified in code instead of
+just requested in the prompt). Mismatches are logged as `[check]` warnings in
+the terminal, and any cited id that does not exist in the dataset is shown
+under the answer as a warning instead of being silently dropped.
+
 ---
 
 ## Stretch goals
