@@ -111,7 +111,7 @@ for retrieval would only increase latency, since the model would have to be
 called twice: once for the initial question and again after the tool call. Retrieval
 using embeddings would also increase latency during embedding convertion and searching,
 plus since embeddings are prone to errors cause they fail to completely catch the semantic 
-meaning many question's would possibly retrieve irrelevant information.
+meaning many questions would possibly retrieve irrelevant information.
 It also makes the whole system simpler and easier to debug. Lastly there is also a study
 (*Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and
 Hybrid Approach*) showing that full context stuffing can match or even
@@ -123,7 +123,7 @@ mainly used for efficiency when the data is massive.
 There is a big problem with scalability. In real-life scenarios we will not be
 dealing with just one event, it will probably be massive data that cannot fit in
 one prompt. It also costs more tokens per LLM call since all the data are being used in the initial
-prompt regardless of the question.
+prompt regardless of the question in comparison with retrieval using embeddings.
 
 **Two deliberate transformations in `build_system_prompt()`**
 
