@@ -108,8 +108,11 @@ model was increased to 8192.
 
 The dataset is small enough to fit in the whole prompt, so adding a tool server
 for retrieval would only increase latency, since the model would have to be
-called twice: once for the initial question and again after the tool call. It
-also makes the whole system simpler and easier to debug. There is also a study
+called twice: once for the initial question and again after the tool call. Retrieval
+using embeddings would also increase latency during embedding convertion and searching,
+plus since embeddings are prone to errors cause they fail to completely catch the semantic 
+meaning many question's would possibly retrieve irrelevant information.
+It also makes the whole system simpler and easier to debug. Lastly there is also a study
 (*Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and
 Hybrid Approach*) showing that full context stuffing can match or even
 outperform RAG in scenarios where the context fits into the whole prompt. RAG is
