@@ -118,7 +118,7 @@ mainly used for efficiency when the data is massive.
 **Cons:**
 
 There is a big problem with scalability. In real-life scenarios we will not be
-dealing with just one event; it will probably be massive data that cannot fit in
+dealing with just one event, it will probably be massive data that cannot fit in
 one prompt.
 
 **Two deliberate transformations in `build_system_prompt()`**
