@@ -194,7 +194,7 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
             return
 
         question = str(request.get("question", "")).strip()
-        name = request.get("provider", "ollama")
+        name = str(request.get("provider", "ollama"))
         provider = PROVIDERS.get(name)
 
         if not question:
@@ -236,6 +236,15 @@ class ConciergeHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    # Windows defaults stdout to cp1252; one character outside it in an answer
+    # (an arrow, a CJK name) would crash the logging print after the model had
+    # already answered. Replace what cannot be encoded instead of dying. The
+    # getattr guard keeps this working if stdout is ever swapped for an object
+    # that cannot be reconfigured (a test harness, an unusual pipe).
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure:
+        reconfigure(encoding="utf-8", errors="replace")
+
     #If the server is ran with --mock the provider is changed to MockProvider which is used
     #to show the UI working without needing a model.
     if "--mock" in sys.argv:

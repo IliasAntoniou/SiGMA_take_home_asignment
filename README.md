@@ -20,7 +20,7 @@ Stack: Python, HTML
 ollama pull qwen2.5:7b-instruct
 ```
 
-**2. Start the server** (Python 3.9+, no dependencies):
+**2. Start the server** (Python 3.10+, no dependencies):
 
 ```bash
 python src/backend/orchestrator.py
