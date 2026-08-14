@@ -9,7 +9,7 @@ of id cause only the ID is being validated.
 Precision: Of every record the model cites, what percentage of them was correct. (Can be 1.0 even if the model doesn't
 return all answers since it counts the correctness of what was being returned)
 Recall: Of all the correct records how many of them did the model actually return. (can be 1.0 even if the model gives
-extra wrong answers since if all the correct ones were included that's what is counts)
+extra wrong answers since if all the correct ones were included that's what it counts)
 Hallucinations: Counts how many entries the model has hallucinated. (Basically if an Id doesn't exists)
 
 """
@@ -45,7 +45,7 @@ def ask(provider, question: str) -> str:
 
 
 def claimed_ids(answer: str, expected: list) -> list:
-    """The ideas included in the matches line are being deduplicated and included in the claimed list
+    """The ids included in the matches line are being deduplicated and included in the claimed list
     if there are expected matches and there's no match line we proceed to find id's from the whole text.
     if nothing was expected we don't count id's cause the model might answer which ones were the closest 
     and we don't want to count them.
@@ -62,7 +62,7 @@ def precision_recall(expected: set, claimed: set) -> tuple:
     #if everything is blank just return 1.0 1.0
     if not expected and not claimed:
         return 1.0, 1.0
-    #finds the intercection of claimed and expected if an id is in both then it was a right claim.
+    #finds the intersection of claimed and expected if an id is in both then it was a right claim.
     right = len(expected & claimed)
     #precision equals all the right ids divided by all the claimed meaning of all that were claimed how many where right
     #it also takes care if claimed is empty and just returns 0.0.

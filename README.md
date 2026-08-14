@@ -1,6 +1,6 @@
 # SiGMA Event Concierge
 
-***NOTE***: Instructions and Architecture were AI generated but verified frome me, The technical decision part which is the most important was entirely written by me with minor fixes in styling and phrasing using AI.
+***NOTE***: Instructions and Architecture were AI generated but verified by me. The technical decision part, which is the most important, was entirely written by me with minor fixes in styling and phrasing using AI.
 
 Project Demo Link: https://youtu.be/Nj5_5nDo5T4
 
@@ -207,7 +207,7 @@ The brief allows at most two.
 
 ## Known limitations
 
-The main limitation lies in the local qwen(Ollama) model cause it's very small and not
+The main limitation lies in the local qwen(Ollama) model because it's very small and not
 very capable, which is clearly shown in the mini evaluation. It does score a
 high precision, but most of the answers were missing entries, making the answer
 accurate but incomplete, hence the lower recall. The free version of Gemini, on
@@ -230,8 +230,8 @@ Other limitations:
   error.
 - **Gemini's free tier is genuinely small.** The free tier does not allow many
   questions, so you hit the limit pretty quickly.
-- **No Agent Loop** There's no tools and agent loop so the model cannot perform
-multiple actions it's just question -> answer.
+- **No agent loop.** There are no tools and no agent loop, so the model cannot
+  perform multiple actions; it's just question -> answer.
 
 ---
 

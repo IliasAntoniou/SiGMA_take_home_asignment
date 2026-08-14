@@ -142,7 +142,7 @@ CITED_ID = re.compile(r"\[([SE]\d{3})\]")
 
 def extract_sources(answer: str) -> list:
     """Every S### or E### the model cited in its answer is a source, so search for them and return
-    the corresponding records from the dataset in order to send it back to the fronted to display them
+    the corresponding records from the dataset in order to send it back to the frontend to display them
     as chips.
     """
     sources = []
@@ -315,7 +315,7 @@ def main():
 
     print(f"SiGMA Event Concierge: http://localhost:{PORT}  (Ctrl+C to stop)")
 
-    #Server runs until it get's interrupted by the keyboard.
+    #Server runs until it gets interrupted by the keyboard.
     try:
         server.serve_forever()
     except KeyboardInterrupt:

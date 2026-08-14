@@ -381,7 +381,12 @@
     } catch (error) {
       reply.className = "message error";
       reply.dataset.who = "⚠ " + answeredBy + " failed";
-      reply.textContent = "Could not reach the concierge: " + error.message;
+      //fetch throws TypeError when the server is unreachable; anything else
+      //is a message the server itself wrote, so show it as-is instead of
+      //blaming the connection for e.g. an empty question.
+      reply.textContent = error instanceof TypeError
+        ? "Could not reach the server - is orchestrator.py still running?"
+        : error.message;
     }
 
     chat.scrollTop = chat.scrollHeight;   // the answer replaced "Thinking..."
