@@ -46,7 +46,7 @@ def read_api_key(path: Path = API_KEY_FILE, name: str = "GEMINI_API") -> str:
 
 #ollama provider class, it talks to a local ollama server and has a complete method that initializes
 #the number of input max tokens to 8192 so that the entire programme can fit and temperature to 0 so that the model
-#doesn't hallucinate and gives the same answer every time. it also handles errors when the model cannot be reached
+#doesn't hallucinate and gives almost the same answer every time. it also handles errors when the model cannot be reached
 #or returns nothing usable.
 class OllamaProvider:
     """Talks to a local Ollama server (no API key, nothing to pay for)."""
@@ -66,10 +66,10 @@ class OllamaProvider:
             "stream": False,  # wait for the full answer; keeps the frontend simple
             "options": {
              
-                # set max tokens to 8192, ollama defaults to 2048
+                # set max tokens to 8192 to fit the programme, ollama defaults to 2048
                 "num_ctx": 8192,
                 # Zero temperature: we want the data copied back accurately,
-                # not creative writing, and the same answer every time.
+                # not creative writing, and the same answer every time as much as possible.
                 "temperature": 0.0,
             },
         }
@@ -157,8 +157,9 @@ class GeminiProvider:
             # Happens when the answer is blocked by a safety filter.
             raise ModelError(f"Gemini returned no usable answer: {str(body)[:200]}")
 
-#it only exists when the server is started with --mock, and returns a fixed answer in the same format as the other
-#providers to show the UI working without a model installed. it also has a 1 second delay to show the "thinking...".
+#this class only gets used when the server is started with --mock, and returns a fixed answer in the same format 
+#as the other providers to show the UI working without a model installed. it also has a 1 second delay 
+#to show the "thinking...".
 class MockProvider:
     """A canned answer, so the UI can be demoed with no model installed.
 

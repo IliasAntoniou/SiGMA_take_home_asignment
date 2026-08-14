@@ -132,7 +132,7 @@ tokens:
 
 They also get grouped by day and half-day, meaning morning (T < 12:00) or
 afternoon (T >= 12:00), in order to make it easier for the model to answer
-questions that include times or specific days.
+questions that include times or specific days. (tested with eval.py)
 
 **Testing prompt changes**
 

@@ -44,6 +44,7 @@ def build_system_prompt(data: dict = DATA) -> str:
     """
     event = data["event"]
 
+    #data sorted by day
     slots = {}
     for s in sorted(data["sessions"], key=lambda s: (s["day"].split()[-1], s["start"])):
         # Zero-padded HH:MM, so a plain string compare gives the half-day.
